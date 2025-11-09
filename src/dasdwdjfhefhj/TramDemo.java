@@ -1,5 +1,9 @@
 package dasdwdjfhefhj;
 
+import dasdwdjfhefhj.tracks.*;
+import dasdwdjfhefhj.vechicleTypes.tram.*;
+import dasdwdjfhefhj.helpers.*;
+
 import javax.swing.*;
 
 //Oto pełny, uruchamialny przykład w Javie – możesz go skopiować do pliku `TramDemo.java` i uruchomić. Zawiera:
@@ -15,59 +19,77 @@ import javax.swing.*;
 //        ## 📄 Kod przykładowy
 //
 //        ```java
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.awt.geom.*;
-import java.util.*;
 import javax.swing.Timer;
 
 public class TramDemo {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            // Budujemy świat
+            // Startowy punkt i prosty odcinek
             Vec2 start = new Vec2(50, 200);
-            StraightSegment seg1 = new StraightSegment(start, 0, 200);
-            ArcSegment seg2 = new ArcSegment(seg1.posAt(seg1.getLength()), 0, 150, 100); // łuk w lewo
-            StraightSegment seg3 = new StraightSegment(seg2.posAt(seg2.getLength()), Math.PI/2, 200);
-            seg1.setNext(seg2);
-            seg2.setNext(seg3);
+            double heading0 = 0.0; // w prawo
+            StraightSegment seg1 = new StraightSegment(start, heading0, 100.0);
 
-            // Tramwaj
-            Tram tram = new Tram();
-            TramSection s1 = new TramSection(30);
-            s1.bogies.add(new Bogie(5));
-            s1.bogies.add(new Bogie(25));
-            TramSection s2 = new TramSection(20);
-            s2.bogies.add(new Bogie(10));
-            TramSection s3 = new TramSection(30);
-            s3.bogies.add(new Bogie(5));
-            s3.bogies.add(new Bogie(25));
-            tram.sections.add(s1);
-            tram.sections.add(s2);
-            tram.sections.add(s3);
-            tram.speed = 2.0;
+            // Łuk Béziera: offsetX=60, offsetZ=40, exitAngle = 30° (0.5236 rad)
+            BezierArc curve1 = new BezierArc(seg1.posAt(seg1.getLength()), seg1.exitHeading(),
+                    60.0, 40.0, Math.toRadians(30));
+
+            // Następny prosty dziedziczy kąt wyjścia łuku
+            StraightSegment seg2 = new StraightSegment(curve1.getEnd(), curve1.exitHeading(), 80.0);
+
+            // Łuk kołowy: długość 120 m, promień +80 m (lewo)
+            BezierArc curve2 = new BezierArc(seg2.posAt(seg2.getLength()), seg2.exitHeading(),
+                    120.0, +80.0);
+
+            // Rozjazd
+            SwitchSegment sw = new SwitchSegment(curve2.getEnd(), curve2.exitHeading());
+            // Po rozjeździe łączymy dalej w jeden odcinek (dla obu gałęzi)
+            StraightSegment segAfterSwitch = new StraightSegment(
+                    sw.getLeftBranch() instanceof BezierArc b ? b.getEnd()
+                            : ((StraightSegment) sw.getRightBranch()).posAt(((StraightSegment) sw.getRightBranch()).getLength()),
+                    // heading dziedziczony z gałęzi (przyjmujemy z lewej dla inicjalizacji)
+                    sw.getLeftBranch().exitHeading(), 120.0
+            );
+            sw.setNext(segAfterSwitch);
+
+            // Linkujemy kolejne segmenty
+            seg1.setNext(curve1);
+            curve1.setNext(seg2);
+            seg2.setNext(curve2);
+            curve2.setNext(sw);
+            // segAfterSwitch może mieć następny segment (opcjonalnie)
+            // e.g. final straight
+            StraightSegment finalStraight = new StraightSegment(segAfterSwitch.posAt(segAfterSwitch.getLength()),
+                    segAfterSwitch.exitHeading(), 150.0);
+            segAfterSwitch.setNext(finalStraight);
+
+            // Tramwaj: Pesa Swing
+            PesaSwing tram = new PesaSwing();
+            tram.speed = 2.0;  // m/s startowo
             tram.sLead = 0.0;
 
+            // Świat
             World world = new World();
             world.start = seg1;
             world.tram = tram;
 
+            // Kamera przyczepiona do środkowego członu (np. s3)
             Camera cam = new Camera();
-            cam.attached = s2; // kamera przyczepiona do środkowego członu
+            cam.attached = tram.sections.get(2); // środkowy człon
 
-            JFrame frame = new JFrame("Tram Demo");
+            // UI
+            JFrame frame = new JFrame("Pesa Swing Tram Demo");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             ScenePanel panel = new ScenePanel(world, cam);
             frame.add(panel);
-            frame.setSize(800, 600);
+            frame.setSize(1000, 700);
+            frame.setLocationRelativeTo(null);
             frame.setVisible(true);
 
-            Timer timer = new Timer(40, e -> {
-                world.update(0.04);
+            // Timer aktualizacji
+            new Timer(30, e -> {
+                world.update(0.03);
                 panel.repaint();
-            });
-            timer.start();
+            }).start();
         });
     }
 }

@@ -1,30 +1,79 @@
 package dasdwdjfhefhj;
 
 import java.awt.*;
-import java.awt.geom.Path2D;
+import java.awt.geom.*;
+
+import dasdwdjfhefhj.tracks.*;
+import dasdwdjfhefhj.helpers.*;
 
 public class WorldRenderer {
-    private final double sampleStep = 0.5; // m
-
     public void drawTracks(Graphics2D g2, TrackSegment start) {
-        Path2D left = new Path2D.Double();
-        Path2D right = new Path2D.Double();
+        // iteracja po segmentach, bez stałego kroku metrowego
         TrackSegment seg = start;
-        // przejdź kilka segmentów lub cały graf wedle potrzeb
-        for (int i = 0; i < 100; i++) {
-            for (double s = 0; s <= seg.getLength(); s += sampleStep) {
-                Vec2 p = seg.posAt(s);
-                Vec2 t = seg.tangentAt(s);
-                Vec2 nHat = new Vec2(-t.z, t.x).norm();
-                double w = 0.725; // półrozstaw (np. 0.725 m dla 1435 mm/2)
-                Vec2 pL = p.add(nHat.scale(w));
-                Vec2 pR = p.sub(nHat.scale(w));
-                if (i == 0 && s == 0) { left.moveTo(pL.x, pL.z); right.moveTo(pR.x, pR.z); }
-                else { left.lineTo(pL.x, pL.z); right.lineTo(pR.x, pR.z); }
+        int guard = 0;
+        while (seg != null && guard++ < 1000) {
+            if (seg instanceof StraightSegment s) {
+                // prosta: narysuj cały odcinek
+                Vec2 p0 = s.getStart();
+                Vec2 p1 = s.posAt(s.getLength());
+                Line2D line = new Line2D.Double(p0.x * Units.M_TO_PX, p0.z * Units.M_TO_PX,
+                        p1.x * Units.M_TO_PX, p1.z * Units.M_TO_PX);
+                g2.setColor(Color.DARK_GRAY);
+                g2.setStroke(new BasicStroke(3));
+                g2.draw(line);
+            } else if (seg instanceof BezierArc b) {
+                // próbkowanie gęste łuku
+                Path2D path = new Path2D.Double();
+                int N = 64;
+                for (int i = 0; i <= N; i++) {
+                    double sLocal = b.getLength() * (i / (double) N);
+                    Vec2 p = b.posAt(sLocal);
+                    double x = p.x * Units.M_TO_PX;
+                    double z = p.z * Units.M_TO_PX;
+                    if (i == 0) path.moveTo(x, z); else path.lineTo(x, z);
+                }
+                g2.setColor(Color.DARK_GRAY);
+                g2.setStroke(new BasicStroke(3));
+                g2.draw(path);
+            } else if (seg instanceof SwitchSegment sw) {
+                // lead
+                StraightSegment lead = sw.getLead();
+                Vec2 p0 = lead.getStart();
+                Vec2 p1 = lead.posAt(lead.getLength());
+                g2.setColor(new Color(80,80,80));
+                g2.setStroke(new BasicStroke(3));
+                g2.draw(new Line2D.Double(p0.x * Units.M_TO_PX, p0.z * Units.M_TO_PX,
+                        p1.x * Units.M_TO_PX, p1.z * Units.M_TO_PX));
+                // gałęzie jako informacyjnie cieniej (opcjonalnie)
+                TrackSegment left = sw.getLeftBranch();
+                TrackSegment right = sw.getRightBranch();
+                drawBranch(g2, left, new Color(120,120,120));
+                drawBranch(g2, right, new Color(120,120,120));
             }
-            seg = seg.getNext(null);
-            if (seg == null) break;
+
+            seg = seg.getNext();
         }
-        g2.draw(left); g2.draw(right);
+    }
+
+    private void drawBranch(Graphics2D g2, TrackSegment seg, Color c) {
+        g2.setColor(c);
+        g2.setStroke(new BasicStroke(2));
+        if (seg instanceof StraightSegment s) {
+            Vec2 p0 = s.getStart();
+            Vec2 p1 = s.posAt(s.getLength());
+            g2.draw(new Line2D.Double(p0.x * Units.M_TO_PX, p0.z * Units.M_TO_PX,
+                    p1.x * Units.M_TO_PX, p1.z * Units.M_TO_PX));
+        } else if (seg instanceof BezierArc b) {
+            Path2D path = new Path2D.Double();
+            int N = 48;
+            for (int i = 0; i <= N; i++) {
+                double sLocal = b.getLength() * (i / (double) N);
+                Vec2 p = b.posAt(sLocal);
+                double x = p.x * Units.M_TO_PX;
+                double z = p.z * Units.M_TO_PX;
+                if (i == 0) path.moveTo(x, z); else path.lineTo(x, z);
+            }
+            g2.draw(path);
+        }
     }
 }

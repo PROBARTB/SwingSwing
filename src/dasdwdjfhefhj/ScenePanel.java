@@ -2,65 +2,81 @@ package dasdwdjfhefhj;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Point2D;
+import java.awt.event.*;
+import java.awt.geom.*;
+
+import dasdwdjfhefhj.vechicle.tram.*;
+import dasdwdjfhefhj.helpers.*;
 
 public class ScenePanel extends JPanel implements KeyListener {
     private final World world;
     private final Camera cam;
 
-    public ScenePanel(World w, Camera c) { this.world = w; this.cam = c; addKeyListener(this); setFocusable(true); }
+    public ScenePanel(World w, Camera c) {
+        this.world = w; this.cam = c;
+        setBackground(Color.WHITE);
+        setFocusable(true);
+        addKeyListener(this);
+    }
 
     @Override protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g.create();
-        AffineTransform base = cam.worldToCamera(cam.attached, getSize());
-        g2.transform(base);
 
-        // 1) tory
+        // Antyaliasing
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Transformacja kamery
+        AffineTransform camTx = cam.worldToCamera(getSize());
+        g2.transform(camTx);
+
+        // Rysuj tory
         new WorldRenderer().drawTracks(g2, world.start);
 
-        // 2) tramwaj
+        // Rysuj tramwaj
         for (TramSection sec : world.tram.sections) {
-            // przelicz anchor w kamerze
-            // attached rysujemy bez skalowania; pozostałe z pseudo-perspektywą
+            // pozycja sekcji w pikselach:
+            double x = sec.originXZ.x * Units.M_TO_PX;
+            double z = sec.originXZ.z * Units.M_TO_PX;
+
             AffineTransform atSec = new AffineTransform();
-            // translate sekcji do jej originXZ
-            atSec.translate(sec.originXZ.x, sec.originXZ.z);
+            atSec.translate(x, z);
             atSec.rotate(sec.heading);
+            // Sekcja attached bez pseudo-perspektywy; reszta delikatnie skaluje względem z'
             if (sec != cam.attached) {
-                // „głębia” jako z' po worldToCamera: wyekstrahuj drugą współrzędną
-                Point2D camPt = base.transform(new Point2D.Double(sec.originXZ.x, sec.originXZ.z), null);
-                double zCam = camPt.getY(); // po obrocie osi kamery: Y = „głębia” względem ref
+                Point2D camSpace = camTx.transform(new Point2D.Double(x, z), null);
+                double zCam = camSpace.getY();
                 double sc = cam.scaleForDepth(zCam);
                 atSec.scale(sc, sc);
             }
             Graphics2D gSec = (Graphics2D) g2.create();
             gSec.transform(atSec);
-            drawSection(gSec, sec); // prostokąt + wózki
+
+            // Korpus członu: prostokąt od (0, -h) do (length, h)
+            double h = 1.2 * Units.M_TO_PX;
+            double Lpx = sec.length * Units.M_TO_PX;
+            gSec.setColor(sec.color);
+            gSec.fill(new Rectangle2D.Double(0, -h/2, Lpx, h));
+
+            // Wózki (niebieskie) w offsetach
+            gSec.setColor(Color.BLUE);
+            for (Bogie b : sec.bogies) {
+                double bx = b.offsetInSection * Units.M_TO_PX;
+                double bw = 0.9 * Units.M_TO_PX;
+                double bh = 0.5 * Units.M_TO_PX;
+                gSec.fill(new Rectangle2D.Double(bx - bw/2, -bh/2, bw, bh));
+            }
+
             gSec.dispose();
         }
 
         g2.dispose();
     }
 
-    private void drawSection(Graphics2D g2, TramSection sec) {
-        // prosty rysunek: korpus sekcji jako prostokąt: od (0,0) do (length, height)
-        double height = 2.8; // przykładowa wysokość
-        g2.draw(new java.awt.geom.Rectangle2D.Double(0, -height, sec.length, height));
-        for (Bogie b : sec.bogies) {
-            // wózek jako mały prostokąt przy offsetInSection
-            g2.fill(new java.awt.geom.Rectangle2D.Double(b.offsetInSection - 0.5, -0.3, 1.0, 0.6));
-        }
-    }
-
-    // Sterowanie prędkością
+    // Sterowanie W/S
     @Override public void keyPressed(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_W) world.tram.speed += 0.5;
-        if (e.getKeyCode() == KeyEvent.VK_S) world.tram.speed -= 0.5;
-        world.tram.speed = Math.max(0, Math.min(world.tram.speed, 15.0)); // clamp
+        if (e.getKeyCode() == KeyEvent.VK_W) world.tram.speed = Math.min(world.tram.speed + 0.5, 12.0);
+        if (e.getKeyCode() == KeyEvent.VK_S) world.tram.speed = Math.max(world.tram.speed - 0.5, 0.0);
     }
     @Override public void keyReleased(KeyEvent e) {}
     @Override public void keyTyped(KeyEvent e) {}

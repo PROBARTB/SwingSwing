@@ -3,24 +3,26 @@ package dasdwdjfhefhj;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 
-public class Camera {
-    public TramSection attached;
+import dasdwdjfhefhj.vechicle.tram.TramSection;
+import dasdwdjfhefhj.helpers.*;
 
-    public AffineTransform worldToCamera(TramSection ref, Dimension viewSize) {
+public class Camera {
+    public TramSection attached; // człon do którego przyczepiamy kamerę
+
+    public AffineTransform worldToCamera(Dimension view) {
         AffineTransform at = new AffineTransform();
-        // centrum ekranu na (viewW/2, viewH/2)
-        at.translate(viewSize.width / 2.0, viewSize.height / 2.0);
-        // obrót tak, aby heading ref był poziomo
-        at.rotate(-ref.heading);
-        // przesunięcie ref origin na (0,0)
-        at.translate(-ref.originXZ.x, -ref.originXZ.z);
+        // centrum
+        at.translate(view.width / 2.0, view.height / 2.0);
+        // obrót: tak aby attached heading był poziomo
+        at.rotate(-attached.heading);
+        // przesunięcie: attached origin na (0,0)
+        at.translate(-attached.originXZ.x * Units.M_TO_PX, -attached.originXZ.z * Units.M_TO_PX);
         return at;
     }
 
-    // pseudo-perspektywa: skala = f(zCamera)
-    public double scaleForDepth(double zCam) {
-        // łagodna pseudo-perspektywa; parametryzuj gain
-        double k = 0.01;
-        return 1.0 / (1.0 + k * zCam);
+    public double scaleForDepth(double zCamPx) {
+        // pseudo-perspektywa umiarkowana
+        double k = 0.0015; // współczynnik zależny od skali pikselowej
+        return 1.0 / (1.0 + k * zCamPx);
     }
 }
