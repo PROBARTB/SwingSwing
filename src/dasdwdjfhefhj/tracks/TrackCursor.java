@@ -8,14 +8,10 @@ public class TrackCursor {
     public void advance(double ds) {
         while (ds > 0 && segment != null) {
             double remaining = segment.getLength() - sLocal;
-            if (ds <= remaining) {
-                sLocal += ds;
-                ds = 0;
-            } else {
+            if (ds <= remaining) { sLocal += ds; ds = 0; }
+            else {
                 ds -= remaining;
-                // wejście w next: dla SwitchSegment next to gałąź
-                TrackSegment nxt = segment.getNext();
-                segment = nxt;
+                segment = segment.getNext(); // Switch zwróci gałąź
                 sLocal = 0;
             }
         }
@@ -28,3 +24,4 @@ public class TrackCursor {
         return Math.atan2(t.z, t.x);
     }
 }
+

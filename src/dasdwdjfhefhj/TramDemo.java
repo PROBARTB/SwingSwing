@@ -24,59 +24,53 @@ import javax.swing.Timer;
 public class TramDemo {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            // Startowy punkt i prosty odcinek
+            // Budowa toru: prosty -> łuk Béziera -> prosty -> łuk kołowy -> rozjazd -> prosty -> final prosty
             Vec2 start = new Vec2(50, 200);
-            double heading0 = 0.0; // w prawo
+            double heading0 = 0.0;
+
             StraightSegment seg1 = new StraightSegment(start, heading0, 100.0);
 
-            // Łuk Béziera: offsetX=60, offsetZ=40, exitAngle = 30° (0.5236 rad)
             BezierArc curve1 = new BezierArc(seg1.posAt(seg1.getLength()), seg1.exitHeading(),
                     60.0, 40.0, Math.toRadians(30));
-
-            // Następny prosty dziedziczy kąt wyjścia łuku
             StraightSegment seg2 = new StraightSegment(curve1.getEnd(), curve1.exitHeading(), 80.0);
 
-            // Łuk kołowy: długość 120 m, promień +80 m (lewo)
             BezierArc curve2 = new BezierArc(seg2.posAt(seg2.getLength()), seg2.exitHeading(),
                     120.0, +80.0);
 
-            // Rozjazd
             SwitchSegment sw = new SwitchSegment(curve2.getEnd(), curve2.exitHeading());
-            // Po rozjeździe łączymy dalej w jeden odcinek (dla obu gałęzi)
+            // segment po rozjeździe
             StraightSegment segAfterSwitch = new StraightSegment(
                     sw.getLeftBranch() instanceof BezierArc b ? b.getEnd()
                             : ((StraightSegment) sw.getRightBranch()).posAt(((StraightSegment) sw.getRightBranch()).getLength()),
-                    // heading dziedziczony z gałęzi (przyjmujemy z lewej dla inicjalizacji)
                     sw.getLeftBranch().exitHeading(), 120.0
             );
             sw.setNext(segAfterSwitch);
 
-            // Linkujemy kolejne segmenty
+            StraightSegment finalStraight = new StraightSegment(segAfterSwitch.posAt(segAfterSwitch.getLength()),
+                    segAfterSwitch.exitHeading(), 150.0);
+
+            // Linkowanie
             seg1.setNext(curve1);
             curve1.setNext(seg2);
             seg2.setNext(curve2);
             curve2.setNext(sw);
-            // segAfterSwitch może mieć następny segment (opcjonalnie)
-            // e.g. final straight
-            StraightSegment finalStraight = new StraightSegment(segAfterSwitch.posAt(segAfterSwitch.getLength()),
-                    segAfterSwitch.exitHeading(), 150.0);
             segAfterSwitch.setNext(finalStraight);
 
-            // Tramwaj: Pesa Swing
+            // Tramwaj Pesa Swing — dokładnie jak podałeś
             PesaSwing tram = new PesaSwing();
-            tram.speed = 2.0;  // m/s startowo
-            tram.sLead = 0.0;
+            tram.speed = 0.0;
+            tram.sLead = 30.0;
 
-            // Świat
             World world = new World();
             world.start = seg1;
             world.tram = tram;
 
-            // Kamera przyczepiona do środkowego członu (np. s3)
-            Camera cam = new Camera();
-            cam.attached = tram.sections.get(2); // środkowy człon
+            // Inicjalizacja pozycji, żeby nie było NPE przy pierwszym renderze
+            world.update(0.0);
 
-            // UI
+            Camera cam = new Camera();
+            cam.attached = tram.sections.get(2); // kamera na 3. członie (ma jeden wózek)
+
             JFrame frame = new JFrame("Pesa Swing Tram Demo");
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             ScenePanel panel = new ScenePanel(world, cam);
@@ -85,8 +79,7 @@ public class TramDemo {
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
 
-            // Timer aktualizacji
-            new Timer(30, e -> {
+            new javax.swing.Timer(30, e -> {
                 world.update(0.03);
                 panel.repaint();
             }).start();
