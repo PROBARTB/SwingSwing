@@ -1,151 +1,222 @@
-//package EALiodufiowAMS2.rendering;
-//
-//import EALiodufiowAMS2.helpers.Units;
-//import EALiodufiowAMS2.helpers.Vec2;
-//
-//import java.awt.*;
-//import java.awt.geom.Path2D;
-//
-///**
-// * RenderingEngine w widoku z boku - KAMERA JAKO CENTRUM LOKALNE.
-// *
-// * System współrzędnych:
-// * - Człon z kamerą ZAWSZE na środku ekranu w pozycji (0, 0) w logice
-// * - Wszystkie obiekty transformowane względem kamery
-// * - X na ekranie = X logiki (bez rotacji)
-// * - Y na ekranie = -Z logiki (Z dodatni = wyżej na ekranie)
-// *
-// * Trapez sekcji:
-// * - Lewa/prawa krawędź: zawsze PIONOWE (X stałe)
-// * - Odstęp X między krawędziami: width * cos(angle) - efekt perspektywy przez obrót
-// * - Wysokość krawędzi: zależy od Z (im większy Z, tym krótsza)
-// * - Pozycja Y: Yekran = screenCenterY - scaleY * zRelative
-// */
-//public class RenderingEngine {
-//    // Parametry perspektywy
-//    private double perspectiveScaleY = 0.004; // skala wysokości na ekranie względem Z
-//    private double perspectiveYShiftM = 0.12; // dodatkowe przesunięcie Y względem Z
-//
-//    // Kamera: pozycja w XZ świata
-//    private Vec2 cameraPos = new Vec2(0, 0);
-//    private Vec2 cameraDir = new Vec2(0, 0);
-//
-//    public void setPerspective(double scaleY, double yShiftMetersPerZMeter) {
-//            this.perspectiveScaleY = scaleY;
-//            this.perspectiveYShiftM = yShiftMetersPerZMeter;
-//           // this.cameraDir= 0.0, 0.0;
-//
-//
-//    }
-//    public void setCamera(Vec2 pos, Vec2 dir) {
-//        this.cameraPos = pos;
-//        this.cameraDir = dir;
-//    }
-//
-//    private Vec2 worldPosToCamera(Vec2 worldXZ) {
-//            double dx = worldXZ.x - cameraPos.x;
-//            double dz = worldXZ.z - cameraPos.z;
-//
-//            //double ca = Math.cos(-cameraAngle);
-//            //double sa = Math.sin(-cameraAngle);
-//            //double xCam = dx * ca - dz * sa;
-//            //double zCam = dx * sa + dz * ca;
-//
-//            //return new Vec2(xCam, zCam);
-//    }
-//
-//    // Projekcja: współrzędne kamery (X, Z) -> ekran (Xpx, Ypx)
-//    public Point cameraToScreen(Vec2 cameraXZ, Dimension vp) {
-//        // Xpx: X kamery bez zmian, centrowany
-//        // Ypx: Y zależy od Z (perspektywa) - Z dodatni = wyżej
-//            double zScale = 1.0 / (1.0 + perspectiveScaleY * Math.max(0.0, cameraXZ.z));
-//        double yShiftPx = Units.mToPx(perspectiveYShiftM * Math.max(0.0, cameraXZ.z));
-//
-//        int cx = vp.width / 2, cy = vp.height / 2;
-//        int xPx = cx + (int)Math.round(Units.mToPx(cameraXZ.x));
-//        int yPx = cy - (int)Math.round(yShiftPx);
-//        return new Point(xPx, yPx);
-//    }
-//
-//    // Do wstecz: dla rasterowania
-//    public Point railToScreen(Vec2 worldXZ, Dimension vp) {
-//        Vec2 camXZ = worldPosToCamera(worldXZ);
-//        return cameraToScreen(camXZ, vp);
-//    }
-//
-//    public void drawTransformedRect(Graphics2D g2, Vec2 posWorld, Vec2 dirWorld, double lengthM, double heightM, Dimension vp, Color fillColor) {
-//        // 1) licz wektory pozycji i kierunku względem kamery.
-//        Vec2 posRel = worldPosToCamera(posWorld);
-//       // Vec2 dirRel = dirWorldToCamera(dirWorld);
-//
-//        // 2) licz szerokość po transformacji -> zmniejszona przez obrót względem kamery
-//        double transformedLength = lengthM * Math.max(0.01, Math.abs(dirRel.z));
-//
-//        // 3) określ pozycje końca i początku
-//        Vec2 rectStart = new Vec2(posRel.x - (transformedLength / 2.0), posRel.z - (transformedLength / 2.0));
-//        Vec2 rectEnd = new Vec2(posRel.x + (transformedLength / 2.0), posRel.z + (transformedLength / 2.0));
-//
-//        double halfW = transformedLength / 2.0;
-//        Vec2 topLeft = new Vec2(rectEnd.x + nrmCam.x * halfW, nearCam.z + nrmCam.z * halfW);
-//        Vec2 leftFarCam  = new Vec2(farCam.x  + nrmCam.x * halfW,  farCam.z  + nrmCam.z * halfW);
-//        Vec2 rightNearCam= new Vec2(nearCam.x - nrmCam.x * halfW, nearCam.z - nrmCam.z * halfW);
-//        Vec2 rightFarCam = new Vec2(farCam.x  - nrmCam.x * halfW,  farCam.z  - nrmCam.z * halfW);
-//
-//        // 4) projekcja na ekran
-//        int cx = vp.width / 2, cy = vp.height / 2;
-//
-//        int leftXNear  = cx + (int)Math.round(Units.mToPx(leftNearCam.x));
-//        int rightXNear = cx + (int)Math.round(Units.mToPx(rightNearCam.x));
-//        int leftXFar   = cx + (int)Math.round(Units.mToPx(leftFarCam.x));
-//        int rightXFar  = cx + (int)Math.round(Units.mToPx(rightFarCam.x));
-//
-//        int leftYNearBase  = cy - (int)Math.round(Units.mToPx(perspectiveYShiftM * Math.max(0.0, leftNearCam.z)));
-//        int rightYNearBase = cy - (int)Math.round(Units.mToPx(perspectiveYShiftM * Math.max(0.0, rightNearCam.z)));
-//        int leftYFarBase   = cy - (int)Math.round(Units.mToPx(perspectiveYShiftM * Math.max(0.0, leftFarCam.z)));
-//        int rightYFarBase  = cy - (int)Math.round(Units.mToPx(perspectiveYShiftM * Math.max(0.0, rightFarCam.z)));
-//
-//        // 5) licz wysokość końca i początku -> skalowana przez Z i perspectiveScaleY
-//        double scaleNear = 1.0 / (1.0 + perspectiveScaleY * Math.max(0.0, Math.max(leftNearCam.z, rightNearCam.z)));
-//        double scaleFar  = 1.0 / (1.0 + perspectiveScaleY * Math.max(0.0, Math.max(leftFarCam.z, rightFarCam.z)));
-//        int heightPxNear = (int)Math.round(Units.mToPx(heightM) * scaleNear);
-//        int heightPxFar  = (int)Math.round(Units.mToPx(heightM) * scaleFar);
-//
-//        // 6) górne rogi -> dolne rogi Y - wysokość
-//        int leftYNearTop  = leftYNearBase - heightPxNear;
-//        int rightYNearTop = rightYNearBase - heightPxNear;
-//        int leftYFarTop   = leftYFarBase - heightPxFar;
-//        int rightYFarTop  = rightYFarBase - heightPxFar;
-//
-//        // 7) polygon (dolne rogi -> górne rogi)
-//        Path2D poly = new Path2D.Double();
-//        poly.moveTo(leftXNear, leftYNearBase);
-//        poly.lineTo(rightXNear, rightYNearBase);
-//        poly.lineTo(rightXFar, rightYFarBase);
-//        poly.lineTo(leftXFar, leftYFarBase);
-//        poly.closePath();
-//
-//        if (fillColor != null) {
-//            g2.setColor(fillColor);
-//            g2.fill(poly);
-//        } else {
-//            g2.setColor(Color.RED);
-//            g2.fill(poly);
-//        }
-//
-//        g2.setColor(Color.BLACK);
-//        g2.setStroke(new BasicStroke(2.0f));
-//        g2.draw(poly);
-//    }
-//
-////    // Sekcja jako trapez w lokalnym układzie kamery
-////    public void drawSection(Graphics2D g2, Vec2 centerWorld, double angleWorld, double lengthM, double widthM, double heightM, Dimension vp) {
-////        Vec2 dirWorld = new Vec2(Math.cos(angleWorld), Math.sin(angleWorld));
-////        drawTransformedRect(g2, centerWorld, dirWorld, lengthM, widthM, heightM, vp, Color.RED);
-////    }
-////
-////    // Wózek jako prostokąt w tym samym modelu
-////    public void drawBogie(Graphics2D g2, Vec2 centerWorld, double angleWorld, double lengthM, double widthM, double heightM, Dimension vp) {
-////        Vec2 dirWorld = new Vec2(Math.cos(angleWorld), Math.sin(angleWorld));
-////        drawTransformedRect(g2, centerWorld, dirWorld, lengthM, widthM, heightM, vp, Color.BLUE);
-////    }
-//}
+package EALiodufiowAMS2.rendering;
+
+import EALiodufiowAMS2.helpers.Units;
+import EALiodufiowAMS2.helpers.Vec3;
+import EALiodufiowAMS2.world.Camera;
+
+import java.awt.*;
+import java.awt.image.BufferedImage;
+
+/**
+ * RenderingEngine provides textured strip-based rendering and simple perspective projection.
+ * All input positions and dimensions are in meters; conversion to pixels happens at the end.
+ */
+public class RenderingEngine {
+
+    // TRZEBA DODAĆ ABY BYŁY TU TRZYMANE LISTA RENDERINGOBJECTS I METODĘ UPDATE KTÓRA JE RENDERUJE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    private double k = 2.0; // perspective coefficient in meters (effective focal distance)
+    private Camera camera;
+
+    /** Assign camera to be used as view origin. */
+    public void setCamera(Camera cam) {
+        this.camera = cam;
+    }
+
+    /**
+     * Project a 3D point (meters) to 2D screen space (pixels).
+     * Conversion from meters to pixels happens after perspective scaling.
+     */
+    private Point project(double xm, double ym, double zm) {
+        // Perspective factor: f = 1 / (1 + z/k) where k is in meters
+        double f = 1.0 / (1.0 + (zm / k));
+
+        // Apply perspective scaling while still in meters
+        double xScaled_m = xm * f;
+        double yScaled_m = ym * f;
+
+        // Convert to pixels at the end
+        int xp = (int) Math.round(xScaled_m * Units.M_TO_PX);
+        int yp = (int) Math.round(yScaled_m * Units.M_TO_PX);
+
+        return new Point(xp, yp);
+    }
+
+    /**
+     * Draws a convex quad polygon using either a texture (strip-mapped) or a flat color.
+     * Points are in screen pixels.
+     */
+    public void drawPolygon(Graphics2D g2, Point[] pts, BufferedImage texture, Color color) {
+        if (texture != null) {
+            int columns = texture.getWidth();
+            for (int i = 0; i < columns; i++) {
+                double t = (double) i / (columns - 1);
+
+                double xTop    = pts[0].x + t * (pts[1].x - pts[0].x);
+                double yTop    = pts[0].y + t * (pts[1].y - pts[0].y);
+                double xBottom = pts[3].x + t * (pts[2].x - pts[3].x);
+                double yBottom = pts[3].y + t * (pts[2].y - pts[3].y);
+
+                int dx1 = (int) Math.round(xTop);
+                int dy1 = (int) Math.round(yTop);
+                int dx2 = dx1 + 1;
+                int dy2 = (int) Math.round(yBottom);
+
+                int sx1 = i;
+                int sy1 = 0;
+                int sx2 = i + 1;
+                int sy2 = texture.getHeight();
+
+                g2.drawImage(texture, dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, null);
+            }
+        } else {
+            g2.setColor(color);
+            g2.fillPolygon(
+                    new int[]{pts[0].x, pts[1].x, pts[2].x, pts[3].x},
+                    new int[]{pts[0].y, pts[1].y, pts[2].y, pts[3].y},
+                    4
+            );
+        }
+
+        // Optional outline for debugging
+        g2.setColor(Color.RED);
+        g2.drawPolygon(
+                new int[]{pts[0].x, pts[1].x, pts[2].x, pts[3].x},
+                new int[]{pts[0].y, pts[1].y, pts[2].y, pts[3].y},
+                4
+        );
+    }
+
+    /**
+     * Draw a rectangle in 3D (meters), oriented by dir (normalized).
+     * The rectangle lies in a vertical plane with height along Y and width along XZ plane given by dir.
+     * pos: center of the rectangle (meters)
+     * dir: normalized direction in XZ plane for width vector
+     * size: (width, height, depthUnused) in meters; depthUnused is ignored
+     */
+    public void drawRectangle3D(Graphics2D g2, Vec3 pos, Vec3 dir, Vec3 size,
+                                BufferedImage texture, Color color) {
+
+        Vec3 dirN = dir.normalize();
+
+        // Build width vector in XZ plane from dirN
+        double lenXZ = Math.sqrt(dirN.x*dirN.x + dirN.z*dirN.z);
+        // Protect against zero-length in XZ
+        double ux = lenXZ > 0 ? dirN.x / lenXZ : 1.0;
+        double uz = lenXZ > 0 ? dirN.z / lenXZ : 0.0;
+
+        // Height vector is global Y axis (vertical face assumption)
+        double vy = 1.0, vz = 0.0;
+
+        double w_m = size.x; // meters
+        double h_m = size.y; // meters
+
+        // Compute 3D corners (meters)
+        double[][] corners_m = {
+                {pos.x - (w_m/2)*ux, pos.y - (h_m/2)*vy, pos.z - (w_m/2)*uz}, // left-bottom
+                {pos.x + (w_m/2)*ux, pos.y - (h_m/2)*vy, pos.z + (w_m/2)*uz}, // right-bottom
+                {pos.x + (w_m/2)*ux, pos.y + (h_m/2)*vy, pos.z + (w_m/2)*uz}, // right-top
+                {pos.x - (w_m/2)*ux, pos.y + (h_m/2)*vy, pos.z - (w_m/2)*uz}  // left-top
+        };
+
+        // Project corners to pixels
+        Point[] pts = new Point[4];
+        for (int i = 0; i < 4; i++) {
+            pts[i] = project(corners_m[i][0], corners_m[i][1], corners_m[i][2]);
+        }
+
+        drawPolygon(g2, pts, texture, color);
+    }
+
+    /**
+     * Draw a rectangle relative to the camera. Inputs are world-space in meters.
+     * Uses camera as view origin, converts to camera-relative position, and draws.
+     */
+    public void drawRectangleRelativeToCamera(Graphics2D g2, Vec3 worldPos, Vec3 worldDir, Vec3 size, BufferedImage texture, Color color) {
+        if (camera == null) throw new IllegalStateException("Camera not set");
+
+        Vec3 relativePos = worldPos.sub(camera.getPos());
+        Vec3 relativeDir = worldDir.sub(camera.getDir());
+
+        drawRectangle3D(g2, relativePos, relativeDir, size, texture, color);
+    }
+
+    /**
+     * Draw a cuboid from surfaces relative to its center (meters).
+     * dimensions: (width, height, depth) in meters
+     * Each surface type maps to a face with its own center and orientation.
+     */
+    public void drawCuboid(Graphics2D g2, Vec3 posBottomCenter, Vec3 dir, Vec3 size, Surface[] surfaces) {
+        double w = size.x;
+        double h = size.y;
+        double d = size.z;
+
+        for (Surface s : surfaces) {
+            BufferedImage tex = s.texture;
+            Color col = s.color;
+
+            Vec3 faceCenter = null;
+            Vec3 faceDir = null;
+            Vec3 faceSize = null;
+
+            // TRZEBA SPRAWDZIĆ CZY TE ŚCIANY TO DOBRZE SĄ POLICZONE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            // TRZEBA DODAĆ UŻYWANIE DIRECTION !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            switch (s.getType()) {
+                case "front":
+                    // Face at +Z side, width across XZ with dir along +X
+                    faceCenter = new Vec3(posBottomCenter.x, posBottomCenter.y, posBottomCenter.z + d/2);
+                    faceDir    = new Vec3(1, 0, 0).normalize();
+                    faceSize   = new Vec3(w, h, 0);
+                    break;
+                case "back":
+                    // Face at -Z side, width across XZ with dir along -X
+                    faceCenter = new Vec3(posBottomCenter.x, posBottomCenter.y, posBottomCenter.z - d/2);
+                    faceDir    = new Vec3(-1, 0, 0).normalize();
+                    faceSize   = new Vec3(w, h, 0);
+                    break;
+                case "left":
+                    // Face at -X side, width across XZ with dir along +Z
+                    faceCenter = new Vec3(posBottomCenter.x - w/2, posBottomCenter.y, posBottomCenter.z);
+                    faceDir    = new Vec3(0, 0, 1).normalize();
+                    faceSize   = new Vec3(d, h, 0);
+                    break;
+                case "right":
+                    // Face at +X side, width across XZ with dir along -Z
+                    faceCenter = new Vec3(posBottomCenter.x + w/2, posBottomCenter.y, posBottomCenter.z);
+                    faceDir    = new Vec3(0, 0, -1).normalize();
+                    faceSize   = new Vec3(d, h, 0);
+                    break;
+                case "top":
+                    // Top face: vertical plane assumption (height along Y),
+                    // width along +X (could also be along Z depending on your needs)
+                    faceCenter = new Vec3(posBottomCenter.x, posBottomCenter.y + h/2, posBottomCenter.z);
+                    faceDir    = new Vec3(1, 0, 0).normalize();
+                    faceSize   = new Vec3(w, d, 0); // showing top as w by d
+                    break;
+                case "bottom":
+                    faceCenter = new Vec3(posBottomCenter.x, posBottomCenter.y - h/2, posBottomCenter.z);
+                    faceDir    = new Vec3(1, 0, 0).normalize();
+                    faceSize   = new Vec3(w, d, 0);
+                    break;
+                default:
+                    System.out.printf("Unknown Cuboid Surface type %s", s.getType());
+                    continue;
+            }
+
+            drawRectangle3D(g2, faceCenter, faceDir, faceSize, tex, col);
+        }
+    }
+
+    /**
+     * Draw a cuboid relative to camera. Inputs are world-space in meters.
+     * Computes cuboid center relative to camera and delegates to drawCuboid.
+     */
+    public void drawCuboidRelativeToCamera(Graphics2D g2, Vec3 worldPos, Vec3 worldDir, Vec3 size, Surface[] surfaces) {
+        if (camera == null) throw new IllegalStateException("Camera not set");
+
+        Vec3 relativePos = worldPos.sub(camera.getPos());
+        Vec3 relativeDir = worldDir.sub(camera.getDir());
+
+        drawCuboid(g2, relativePos, relativeDir, size, surfaces);
+    }
+}

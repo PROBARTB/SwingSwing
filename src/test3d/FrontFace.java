@@ -13,7 +13,7 @@ public class FrontFace extends JPanel {
     public FrontFace() {
         try {
             // Wczytaj obrazek z pliku
-            texture = ImageIO.read(new File("texture.png"));
+            texture = ImageIO.read(new File("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -58,41 +58,7 @@ public class FrontFace extends JPanel {
             pts[i] = project(corners[i][0], corners[i][1], corners[i][2], k);
         }
 
-        // Paskowe rysowanie tekstury
-//        for (int i = 0; i < texture.getWidth(); i++) {
-//            double t = (double)i / texture.getWidth();
-//
-//            int xLeft = (int)(pts[0].x + t * (pts[3].x - pts[0].x));
-//            int yLeft = (int)(pts[0].y + t * (pts[3].y - pts[0].y));
-//            int xRight = (int)(pts[1].x + t * (pts[2].x - pts[1].x));
-//            int yRight = (int)(pts[1].y + t * (pts[2].y - pts[1].y));
-//
-//            g2.drawImage(texture,
-//                    xLeft, yLeft, xRight, yRight,
-//                    0, i, texture.getHeight(), i + 1,
-//                    null);
-//        }
-
-//        int topYDiff = Math.abs(pts[0].y - pts[1].y);
-//        int bottomYDiff = Math.abs(pts[3].y - pts[2].y);
-//        int rightXDiff = Math.abs(pts[1].x - pts[2].x);
-//        int leftXYDiff = Math.abs(pts[0].x - pts[3].x);
-//        int translatedWidth = pts[1].x - pts[0].x;
-//
-//        int acurracyPx = 1;
-//
-//        int columns = Math.min(Math.max(topYDiff, bottomYDiff) / acurracyPx, translatedWidth);
-//        int imgColWidth = texture.getWidth() / columns;
-//        int colWidth = translatedWidth / columns;
-//        System.out.printf("%d %d %d %d %d %d %d\n", topYDiff, bottomYDiff, rightXDiff, leftXYDiff, translatedWidth, columns, colWidth);
-//
-//        for (int i = 0; i < columns; i++) {
-//
-//            g2.drawImage(texture,
-//                    pts[0].x + i*colWidth, pts[0].y - i*(int)Math.round((double)topYDiff/columns), pts[0].x + (i+1)*colWidth, pts[3].y - i*(int)Math.round((double)bottomYDiff/columns),
-//                    i*imgColWidth, 0, (i+1)*imgColWidth, texture.getHeight(),
-//                    null);
-//        }
+        // paskowe rysowanie tekstury
         // Załóżmy: pts[0]=LT, pts[1]=RT, pts[2]=RB, pts[3]=LB
         int columns = texture.getWidth(); // 1 pasek = 1 źródłowa kolumna
         for (int i = 0; i < columns; i++) {
@@ -119,11 +85,6 @@ public class FrontFace extends JPanel {
             // Rysowanie paska
             g2.drawImage(texture, dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, null);
         }
-
-
-
-
-
 
         // Obrys trapezu
         g2.setColor(Color.RED);
