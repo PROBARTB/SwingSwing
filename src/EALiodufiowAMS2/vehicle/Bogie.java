@@ -1,32 +1,26 @@
 package EALiodufiowAMS2.vehicle;
-
-import EALiodufiowAMS2.helpers.Vec2;
+;
+import EALiodufiowAMS2.helpers.Transform;
+import EALiodufiowAMS2.helpers.Vec3;
 
 public class Bogie {
     private final double offsetInSection;
-    private final double height;
-    private final double length;
 
-    private double sAlongTrack;
-    private Vec2 worldPos = new Vec2(0,0);
-    private Vec2 worldDir = new Vec2(1,0);
+    private double posOnTrack;
+    private Transform transform;
 
+    // TA KLASA JEST JUŻ NOWA, ALE NIE DOKOŃCZONA
 
-    public Bogie(double offsetInSection, double lengthMeters, double heightMeters) {
+    public Bogie(double offsetInSection, Vec3 size) {
         this.offsetInSection = offsetInSection;
-        this.length = lengthMeters;
-        this.height = heightMeters;
+        this.transform = new Transform(null, null, size);
     }
 
     public double getOffsetInSection() { return offsetInSection; }
 
-    public double getSAlongTrack() { return sAlongTrack; }
-    public void setSAlongTrack(double s) { this.sAlongTrack = s; }
+    public double getPosOnTrack() { return posOnTrack; }
+    public void setPosOnTrack(double positionOnTrack) { this.posOnTrack = positionOnTrack; }
 
-    public Vec2 getWorldPos() { return worldPos; }
-    public Vec2 getWorldDir() { return worldDir; }
-    public void setWorld(Vec2 pos, Vec2 dir) { this.worldPos = pos; this.worldDir = dir.norm(); }
-
-    public double getHeight() { return height; }
-    public double getLength() { return length; }
+    public Transform getTransform() { return transform; }
+    public void setTransform(Transform transform) { this.transform = transform; }
 }

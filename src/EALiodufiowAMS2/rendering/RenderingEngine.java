@@ -6,46 +6,60 @@ import EALiodufiowAMS2.world.Camera;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.util.*;
+import java.util.List;
 
-/**
- * RenderingEngine provides textured strip-based rendering and simple perspective projection.
- * All input positions and dimensions are in meters; conversion to pixels happens at the end.
- */
 public class RenderingEngine {
 
-    // TRZEBA DODAĆ ABY BYŁY TU TRZYMANE LISTA RENDERINGOBJECTS I METODĘ UPDATE KTÓRA JE RENDERUJE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    private List<RenderingObject> objects = new ArrayList<>();
+
+    public void addObject(RenderingObject obj) {
+        objects.add(obj);
+    }
+
+    public void clearObjects() {
+        objects.clear();
+    }
+
+    public void update(Graphics2D g2) {
+        for (RenderingObject obj : objects) {
+            switch (obj.getType()) {
+                case "cuboid":
+                    Cuboid cuboid = (Cuboid) obj;
+                    Vec3 posBottomCenter    = cuboid.getTransform().getPos();
+                    Vec3 dir                = cuboid.getTransform().getDir();
+                    Vec3 size               = cuboid.getTransform().getSize();
+                    List<Surface> surfaces  = cuboid.getSurfaces();
+
+                    drawCuboidRelativeToCamera(g2, posBottomCenter, dir, size, surfaces);
+                    break;
+
+                default:
+                    System.out.printf("Unknown object type: %s%n", obj.getType());
+                    break;
+            }
+        }
+    }
 
     private double k = 2.0; // perspective coefficient in meters (effective focal distance)
     private Camera camera;
 
-    /** Assign camera to be used as view origin. */
     public void setCamera(Camera cam) {
         this.camera = cam;
     }
 
-    /**
-     * Project a 3D point (meters) to 2D screen space (pixels).
-     * Conversion from meters to pixels happens after perspective scaling.
-     */
     private Point project(double xm, double ym, double zm) {
-        // Perspective factor: f = 1 / (1 + z/k) where k is in meters
         double f = 1.0 / (1.0 + (zm / k));
 
-        // Apply perspective scaling while still in meters
         double xScaled_m = xm * f;
         double yScaled_m = ym * f;
 
-        // Convert to pixels at the end
         int xp = (int) Math.round(xScaled_m * Units.M_TO_PX);
         int yp = (int) Math.round(yScaled_m * Units.M_TO_PX);
 
         return new Point(xp, yp);
     }
 
-    /**
-     * Draws a convex quad polygon using either a texture (strip-mapped) or a flat color.
-     * Points are in screen pixels.
-     */
     public void drawPolygon(Graphics2D g2, Point[] pts, BufferedImage texture, Color color) {
         if (texture != null) {
             int columns = texture.getWidth();
@@ -87,31 +101,20 @@ public class RenderingEngine {
         );
     }
 
-    /**
-     * Draw a rectangle in 3D (meters), oriented by dir (normalized).
-     * The rectangle lies in a vertical plane with height along Y and width along XZ plane given by dir.
-     * pos: center of the rectangle (meters)
-     * dir: normalized direction in XZ plane for width vector
-     * size: (width, height, depthUnused) in meters; depthUnused is ignored
-     */
     public void drawRectangle3D(Graphics2D g2, Vec3 pos, Vec3 dir, Vec3 size,
                                 BufferedImage texture, Color color) {
 
         Vec3 dirN = dir.normalize();
 
-        // Build width vector in XZ plane from dirN
         double lenXZ = Math.sqrt(dirN.x*dirN.x + dirN.z*dirN.z);
-        // Protect against zero-length in XZ
         double ux = lenXZ > 0 ? dirN.x / lenXZ : 1.0;
         double uz = lenXZ > 0 ? dirN.z / lenXZ : 0.0;
 
-        // Height vector is global Y axis (vertical face assumption)
         double vy = 1.0, vz = 0.0;
 
         double w_m = size.x; // meters
         double h_m = size.y; // meters
 
-        // Compute 3D corners (meters)
         double[][] corners_m = {
                 {pos.x - (w_m/2)*ux, pos.y - (h_m/2)*vy, pos.z - (w_m/2)*uz}, // left-bottom
                 {pos.x + (w_m/2)*ux, pos.y - (h_m/2)*vy, pos.z + (w_m/2)*uz}, // right-bottom
@@ -119,7 +122,6 @@ public class RenderingEngine {
                 {pos.x - (w_m/2)*ux, pos.y + (h_m/2)*vy, pos.z - (w_m/2)*uz}  // left-top
         };
 
-        // Project corners to pixels
         Point[] pts = new Point[4];
         for (int i = 0; i < 4; i++) {
             pts[i] = project(corners_m[i][0], corners_m[i][1], corners_m[i][2]);
@@ -128,10 +130,6 @@ public class RenderingEngine {
         drawPolygon(g2, pts, texture, color);
     }
 
-    /**
-     * Draw a rectangle relative to the camera. Inputs are world-space in meters.
-     * Uses camera as view origin, converts to camera-relative position, and draws.
-     */
     public void drawRectangleRelativeToCamera(Graphics2D g2, Vec3 worldPos, Vec3 worldDir, Vec3 size, BufferedImage texture, Color color) {
         if (camera == null) throw new IllegalStateException("Camera not set");
 
@@ -141,15 +139,17 @@ public class RenderingEngine {
         drawRectangle3D(g2, relativePos, relativeDir, size, texture, color);
     }
 
-    /**
-     * Draw a cuboid from surfaces relative to its center (meters).
-     * dimensions: (width, height, depth) in meters
-     * Each surface type maps to a face with its own center and orientation.
-     */
-    public void drawCuboid(Graphics2D g2, Vec3 posBottomCenter, Vec3 dir, Vec3 size, Surface[] surfaces) {
+    public void drawCuboid(Graphics2D g2, Vec3 posBottomCenter, Vec3 dir, Vec3 size, List<Surface> surfaces) {
         double w = size.x;
         double h = size.y;
         double d = size.z;
+
+        Vec3 forward = dir.normalize();
+        Vec3 up = new Vec3(0, 1, 0);
+        Vec3 right = forward.cross(up).normalize();
+        up = right.cross(forward).normalize();
+        Vec3 bottomCenter = posBottomCenter;
+        Vec3 center = bottomCenter.add(up.scale(h / 2.0));
 
         for (Surface s : surfaces) {
             BufferedImage tex = s.texture;
@@ -160,43 +160,36 @@ public class RenderingEngine {
             Vec3 faceSize = null;
 
             // TRZEBA SPRAWDZIĆ CZY TE ŚCIANY TO DOBRZE SĄ POLICZONE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            // TRZEBA DODAĆ UŻYWANIE DIRECTION !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             switch (s.getType()) {
                 case "front":
-                    // Face at +Z side, width across XZ with dir along +X
-                    faceCenter = new Vec3(posBottomCenter.x, posBottomCenter.y, posBottomCenter.z + d/2);
-                    faceDir    = new Vec3(1, 0, 0).normalize();
-                    faceSize   = new Vec3(w, h, 0);
+                    faceCenter = center.add(forward.scale(d / 2.0));
+                    faceDir = forward;
+                    faceSize = new Vec3(w, h, 0);
                     break;
                 case "back":
-                    // Face at -Z side, width across XZ with dir along -X
-                    faceCenter = new Vec3(posBottomCenter.x, posBottomCenter.y, posBottomCenter.z - d/2);
-                    faceDir    = new Vec3(-1, 0, 0).normalize();
-                    faceSize   = new Vec3(w, h, 0);
+                    faceCenter = center.add(forward.scale(-d / 2.0));
+                    faceDir = forward.scale(-1);
+                    faceSize = new Vec3(w, h, 0);
                     break;
                 case "left":
-                    // Face at -X side, width across XZ with dir along +Z
-                    faceCenter = new Vec3(posBottomCenter.x - w/2, posBottomCenter.y, posBottomCenter.z);
-                    faceDir    = new Vec3(0, 0, 1).normalize();
-                    faceSize   = new Vec3(d, h, 0);
+                    faceCenter = center.add(right.scale(-w / 2.0));
+                    faceDir = right.scale(-1);
+                    faceSize = new Vec3(d, h, 0);
                     break;
                 case "right":
-                    // Face at +X side, width across XZ with dir along -Z
-                    faceCenter = new Vec3(posBottomCenter.x + w/2, posBottomCenter.y, posBottomCenter.z);
-                    faceDir    = new Vec3(0, 0, -1).normalize();
-                    faceSize   = new Vec3(d, h, 0);
+                    faceCenter = center.add(right.scale(w / 2.0));
+                    faceDir = right;
+                    faceSize = new Vec3(d, h, 0);
                     break;
                 case "top":
-                    // Top face: vertical plane assumption (height along Y),
-                    // width along +X (could also be along Z depending on your needs)
-                    faceCenter = new Vec3(posBottomCenter.x, posBottomCenter.y + h/2, posBottomCenter.z);
-                    faceDir    = new Vec3(1, 0, 0).normalize();
-                    faceSize   = new Vec3(w, d, 0); // showing top as w by d
+                    faceCenter = center.add(up.scale(h / 2.0));
+                    faceDir = up;
+                    faceSize = new Vec3(w, d, 0);
                     break;
                 case "bottom":
-                    faceCenter = new Vec3(posBottomCenter.x, posBottomCenter.y - h/2, posBottomCenter.z);
-                    faceDir    = new Vec3(1, 0, 0).normalize();
-                    faceSize   = new Vec3(w, d, 0);
+                    faceCenter = center.add(up.scale(-h / 2.0));
+                    faceDir = up.scale(-1);
+                    faceSize = new Vec3(w, d, 0);
                     break;
                 default:
                     System.out.printf("Unknown Cuboid Surface type %s", s.getType());
@@ -207,11 +200,7 @@ public class RenderingEngine {
         }
     }
 
-    /**
-     * Draw a cuboid relative to camera. Inputs are world-space in meters.
-     * Computes cuboid center relative to camera and delegates to drawCuboid.
-     */
-    public void drawCuboidRelativeToCamera(Graphics2D g2, Vec3 worldPos, Vec3 worldDir, Vec3 size, Surface[] surfaces) {
+    public void drawCuboidRelativeToCamera(Graphics2D g2, Vec3 worldPos, Vec3 worldDir, Vec3 size, List<Surface> surfaces) {
         if (camera == null) throw new IllegalStateException("Camera not set");
 
         Vec3 relativePos = worldPos.sub(camera.getPos());

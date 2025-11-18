@@ -1,128 +1,81 @@
 package EALiodufiowAMS2.vehicle;
 
-import EALiodufiowAMS2.helpers.Vec2;
-import EALiodufiowAMS2.tracks.TrackLayout;
+import EALiodufiowAMS2.helpers.Vec3;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
-public class RailVehicle {
+public abstract class RailVehicle {
+    private final String id;
+    private String currentTrackSegmentId;
 
     protected final List<Section> sections = new ArrayList<>();
     protected final List<Joint> joints = new ArrayList<>();
+    protected final Map<Integer, Runnable> keyBindings;
 
-    protected Section cameraSection;
-    protected double speedMS = 0.0;
-    protected double leadingSGlobal = 0.0;
+    private Vec3 size;
 
-    public void setSpeedMS(double s) { this.speedMS = s; }
-    public double getSpeedMS() { return speedMS; }
+    private double speed;           //  [m/s]
+    private double acceleration;        //  [m/s^2]
+    private boolean isPowered;
+    private boolean isDriveEnabled;
+    private int driveDirection;         // 1 / 0 / -1
+    private double posOnTrack;     // pos in meters on currentTrackSegment
+    private double distanceTravelled;
 
-    public List<Section> getSections() { return sections; }
-    public List<Joint> getJoints() { return joints; }
-
-    public Section getCameraSection() { return cameraSection; }
-    public void setCameraSection(Section sec) { this.cameraSection = sec; }
-
-    protected double computeGlobalOffsetForBogie(int sectionIndex, Bogie bogie) {
-        double offset = 0.0;
-        for (int i = 0; i < sectionIndex; i++) {
-            offset += sections.get(i).getLength();
-            offset += joints.get(i).getLength();
-        }
-        offset += bogie.getOffsetInSection();
-        Section first = sections.get(0);
-        double leadingOffsetInFirst = first.getBogies().isEmpty() ? 0.0 : first.getBogies().get(0).getOffsetInSection();
-        offset -= leadingOffsetInFirst;
-        return offset;
+    public RailVehicle(String id) {
+        this.id = id;
+        this.keyBindings = new HashMap<>();
+        this.speed = 0.0;
+        this.acceleration = 0.0;
+        this.isPowered = true; // temp true
+        this.isDriveEnabled = true; // temp true
+        this.driveDirection = 1;
+        this.posOnTrack = 0.0;
+        this.distanceTravelled = 0.0;
     }
 
-    public void update(double dt, TrackLayout layout) {
-        if (layout == null || sections.isEmpty()) return;
-        double trackLen = layout.getTotalLength();
+    public String getId() { return id; }
 
-        leadingSGlobal = Math.max(0.0, Math.min(trackLen, leadingSGlobal + speedMS * dt));
+    public String getCurrentTrackSegmentId() { return currentTrackSegmentId; }
+    public void setCurrentTrackSegmentId(String segmentId) { this.currentTrackSegmentId = segmentId; }
 
-        for (int sIdx = 0; sIdx < sections.size(); sIdx++) {
-            Section sec = sections.get(sIdx);
-            for (Bogie b : sec.getBogies()) {
-                double s = Math.max(0.0, Math.min(trackLen, leadingSGlobal + computeGlobalOffsetForBogie(sIdx, b)));
-                b.setSAlongTrack(s);
-                TrackLayout.Sample samp = layout.sampleAt(s);
-                if (samp != null) b.setWorld(samp.worldPos, samp.worldDir);
-            }
-        }
+    public Vec3 getSize() { return size; }
+    public void setSize(Vec3 size) { this.size = size; }
 
-        boolean[] hasTransform = new boolean[sections.size()];
-        for (int sIdx = 0; sIdx < sections.size(); sIdx++) {
-            Section sec = sections.get(sIdx);
-            if (!sec.getBogies().isEmpty()) {
-                double ax = 0, az = 0, dx = 0, dz = 0;
-                for (Bogie b : sec.getBogies()) {
-                    ax += b.getWorldPos().x; az += b.getWorldPos().z;
-                    dx += b.getWorldDir().x; dz += b.getWorldDir().z;
-                }
-                int n = sec.getBogies().size();
-                Vec2 pos = new Vec2(ax / n, az / n);
-                Vec2 dir = new Vec2(dx / n, dz / n).norm();
-                sec.setWorld(pos, dir);
-                hasTransform[sIdx] = true;
-            }
-        }
+    public double getSpeed() { return speed; }
+    public void setSpeed(double speed) { this.speed = speed; }
 
-        for (int sIdx = 0; sIdx < sections.size(); sIdx++) {
-            Section sec = sections.get(sIdx);
-            if (sec.getBogies().isEmpty()) {
-                Vec2 startAnchor = null, endAnchor = null;
+    public double getAcceleration() { return acceleration; }
+    public void setAcceleration(double acceleration) { this.acceleration = acceleration; }
 
-                if (sIdx > 0 && hasTransform[sIdx - 1]) {
-                    Section prev = sections.get(sIdx - 1);
-                    Joint jPrev = joints.get(sIdx - 1);
-                    Vec2 prevEnd = prev.getEnd();
-                    startAnchor = prev.getStart();
-                }
+    public boolean isPowered() { return isPowered; }
+    public void setPowered(boolean powered) { this.isPowered = powered; }
 
-                if (sIdx < sections.size() - 1 && hasTransform[sIdx + 1]) {
-                    Section next = sections.get(sIdx + 1);
-                    Joint jThis = joints.get(sIdx);
-                    Vec2 nextStart = next.getStart();
-                    endAnchor = next.getEnd();
-                }
+    public boolean isDriveEnabled() { return isDriveEnabled; }
+    public void setDriveEnabled(boolean enabled) { this.isDriveEnabled = enabled; }
 
-                if (startAnchor != null && endAnchor != null) {
-                    Vec2 mid = new Vec2((startAnchor.x + endAnchor.x) / 2.0,
-                            (startAnchor.z + endAnchor.z) / 2.0);
-                    Vec2 dir = endAnchor.sub(startAnchor).norm();
-                    sec.setWorld(mid, dir);
-                    hasTransform[sIdx] = true;
-                } else if (startAnchor != null) {
-                    Section prev = sections.get(sIdx - 1);
-                    Vec2 dir = prev.getWorldDir();
-                    Vec2 pos = new Vec2(
-                            startAnchor.x + dir.x * (sec.getLength() / 2.0),
-                            startAnchor.z + dir.z * (sec.getLength() / 2.0)
-                    );
-                    sec.setWorld(pos, dir);
-                    hasTransform[sIdx] = true;
-                } else if (endAnchor != null) {
-                    Section next = sections.get(sIdx + 1);
-                    Vec2 dir = next.getWorldDir();
-                    Vec2 pos = new Vec2(
-                            endAnchor.x - dir.x * (sec.getLength() / 2.0),
-                            endAnchor.z - dir.z * (sec.getLength() / 2.0)
-                    );
-                    sec.setWorld(pos, dir);
-                    hasTransform[sIdx] = true;
-                } else {
-                    int left = sIdx - 1;
-                    while (left >= 0 && !hasTransform[left]) left--;
-                    if (left >= 0) {
-                        Section ref = sections.get(left);
-                        sec.setWorld(ref.getWorldPos(), ref.getWorldDir());
-                        hasTransform[sIdx] = true;
-                    }
-                }
-            }
-        }
+    public int getDriveDirection() { return driveDirection; }
+    public void setDriveDirection(int direction) { this.driveDirection = direction; }
+
+    public double getPosOnTrack() { return posOnTrack; }
+    public void setPosOnTrack(double positionOnTrack) { this.posOnTrack = positionOnTrack; }
+
+    public double getDistanceTravelled() { return distanceTravelled; }
+    public void addDistanceTravelled(double deltaMeters) { this.distanceTravelled += Math.max(0.0, deltaMeters); }
+
+    public Map<Integer, Runnable> getKeyBindings() { return keyBindings; }
+
+    public void bindKey(int keyCode, Runnable action) {
+        if (action == null) return;
+        keyBindings.put(keyCode, action);
     }
+
+    public void unbindKey(int keyCode) {
+        keyBindings.remove(keyCode);
+    }
+
+    public void clearBindings() {
+        keyBindings.clear();
+    }
+
 }

@@ -7,5 +7,5 @@ import java.awt.image.BufferedImage;
 
 public interface RenderingObject {
     Transform getTransform();
-
+    String getType();
 }

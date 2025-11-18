@@ -19,6 +19,11 @@ public class Cuboid implements RenderingObject {
         return transform;
     }
 
+    @Override
+    public String getType() {
+        return "cuboid";
+    }
+
     public Surface getSurface(String type) {
         for (Surface s : surfaces) {
             if (Objects.equals(s.getType(), type)) {
@@ -26,6 +31,9 @@ public class Cuboid implements RenderingObject {
             }
         }
         return null;
+    }
+    public List<Surface> getSurfaces() {
+        return surfaces;
     }
 
     public void addSurface(Surface surface) {
