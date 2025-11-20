@@ -1,5 +1,6 @@
 package EALiodufiowAMS2.vehicle;
 
+import EALiodufiowAMS2.helpers.Transform;
 import EALiodufiowAMS2.helpers.Vec3;
 
 import java.util.*;
@@ -8,11 +9,11 @@ public abstract class RailVehicle {
     private final String id;
     private String currentTrackSegmentId;
 
-    protected final List<Section> sections = new ArrayList<>();
-    protected final List<Joint> joints = new ArrayList<>();
+    protected final List<Section> sections;
+    protected final List<Joint> joints;
     protected final Map<Integer, Runnable> keyBindings;
 
-    private Vec3 size;
+    private final Vec3 size;
 
     private double speed;           //  [m/s]
     private double acceleration;        //  [m/s^2]
@@ -22,9 +23,15 @@ public abstract class RailVehicle {
     private double posOnTrack;     // pos in meters on currentTrackSegment
     private double distanceTravelled;
 
-    public RailVehicle(String id) {
+    public RailVehicle(String id, List<Section> sections, List<Joint> joints ) {
         this.id = id;
         this.keyBindings = new HashMap<>();
+
+        this.sections = sections;
+        this.joints = joints;
+
+        this.size = calcSize(sections, joints);
+
         this.speed = 0.0;
         this.acceleration = 0.0;
         this.isPowered = true; // temp true
@@ -34,13 +41,37 @@ public abstract class RailVehicle {
         this.distanceTravelled = 0.0;
     }
 
+    private Vec3 calcSize(List<Section> sections, List<Joint> joints) {
+        Vec3 max = new Vec3(0, 0, 0);
+        for(Section s : sections) {
+            Vec3 ss = s.getTransform().getSize();
+            if (ss.x > max.x) max.x = ss.x;
+            if (ss.y > max.y) max.y = ss.y;
+            if (ss.z > max.z) max.z = ss.z;
+
+            for(Bogie b : s.getBogies()) {
+                Vec3 bs = b.getTransform().getSize();
+                if (bs.x > max.x) max.x = bs.x;
+                if (bs.y > max.y) max.y = bs.y;
+                if (bs.z > max.z) max.z = bs.z;
+            }
+        }
+        for(Joint j : joints) {
+            Vec3 js = j.getTransform().getSize();
+            if (js.x > max.x) max.x = js.x;
+            if (js.y > max.y) max.y = js.y;
+            if (js.z > max.z) max.z = js.z;
+        }
+        return max;
+    }
+
     public String getId() { return id; }
 
     public String getCurrentTrackSegmentId() { return currentTrackSegmentId; }
     public void setCurrentTrackSegmentId(String segmentId) { this.currentTrackSegmentId = segmentId; }
 
-    public Vec3 getSize() { return size; }
-    public void setSize(Vec3 size) { this.size = size; }
+    public Transform getTransform() { return this.sections.get(0).getBogies().get(0).getTransform(); }
+    public Vec3 getSize() { return this.size; }
 
     public double getSpeed() { return speed; }
     public void setSpeed(double speed) { this.speed = speed; }
@@ -69,13 +100,14 @@ public abstract class RailVehicle {
         if (action == null) return;
         keyBindings.put(keyCode, action);
     }
-
     public void unbindKey(int keyCode) {
         keyBindings.remove(keyCode);
     }
-
     public void clearBindings() {
         keyBindings.clear();
     }
 
+    public List<Section> getSections() { return sections; }
+
+    public List<Joint> getJoints() { return joints; }
 }

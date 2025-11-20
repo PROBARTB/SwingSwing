@@ -1,55 +1,33 @@
 package EALiodufiowAMS2.vehicle;
 
-import EALiodufiowAMS2.helpers.Vec2;
+import EALiodufiowAMS2.helpers.Transform;
+import EALiodufiowAMS2.helpers.Vec3;
 
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Section {
-    private final double length;
-    private final double height;
+    private Transform transform;
+    private BufferedImage texture;
     private final List<Bogie> bogies = new ArrayList<>();
 
-    private Vec2 worldPos = new Vec2(0,0); // środek
-    private Vec2 worldDir = new Vec2(1,0);
-    private double worldAngle = 0.0;
-
-    // default height 1.8 m
-    public Section(double lengthMeters) {
-        this(lengthMeters, 4.0);
+    public Section(Vec3 size, BufferedImage texture) {
+        this.transform = new Transform(null, null, size);
+        this.texture = texture;
     }
 
-    public Section(double lengthMeters, double heightMeters) {
-        this.length = lengthMeters;
-        this.height = heightMeters;
-    }
+    public Transform getTransform() { return transform; }
+    public void setTransform(Transform transform) { this.transform = transform; }
 
-    public double getLength() { return length; }
-    public double getHeight() { return height; }
+    public BufferedImage getTexture() { return texture; }
+    public void setTexture(BufferedImage texture) { this.texture = texture; }
 
-    public Bogie addBogie(double offsetFromStartMeters, double lengthMeters, double heightMeters) {
-        Bogie b = new Bogie(offsetFromStartMeters, lengthMeters, heightMeters);
+    public Bogie addBogie(double offsetFromStartMeters, Vec3 size, BufferedImage texture) {
+        Bogie b = new Bogie(offsetFromStartMeters, size, texture);
         bogies.add(b);
         return b;
     }
-
     public List<Bogie> getBogies() { return bogies; }
 
-
-    public Vec2 getWorldPos() { return worldPos; }
-    public Vec2 getWorldDir() { return worldDir; }
-    public double getWorldAngle() { return worldAngle; }
-
-    public void setWorld(Vec2 pos, Vec2 dir) {
-        this.worldPos = pos;
-        this.worldDir = dir.norm();
-        this.worldAngle = Math.atan2(worldDir.z, worldDir.x);
-    }
-
-    public Vec2 getEnd() {
-        return new Vec2(worldPos.x + worldDir.x * (length/2.0), worldPos.z + worldDir.z * (length/2.0));
-    }
-    public Vec2 getStart() {
-        return new Vec2(worldPos.x - worldDir.x * (length/2.0), worldPos.z - worldDir.z * (length/2.0));
-    }
 }

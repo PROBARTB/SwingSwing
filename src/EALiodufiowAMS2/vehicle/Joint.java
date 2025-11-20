@@ -1,25 +1,26 @@
 package EALiodufiowAMS2.vehicle;
 
-public class Joint {
-    private final double height;
-    private final double length;
-    private final double maxBendRadians;
+import EALiodufiowAMS2.helpers.Transform;
+import EALiodufiowAMS2.helpers.Vec3;
 
-    public Joint(double lengthMeters, double heightMeters, double maxBendRadians) {
-        this.height = heightMeters;
-        this.length = lengthMeters;
+import java.awt.image.BufferedImage;
+
+public class Joint {
+    private final Transform transform;
+    private final double maxBendRadians;
+    private BufferedImage texture;
+
+    public Joint(Vec3 size, double maxBendRadians, BufferedImage texture) {
+        this.transform = new Transform(null, null, size);
         this.maxBendRadians = maxBendRadians;
     }
 
-    public double getHeight() {
-        return height;
-    }
-    public double getLength() {
-        return length;
-    }
-    public double getMaxBendRadians() {
-        return maxBendRadians;
-    }
+    public double getMaxBendRadians() { return maxBendRadians; }
+
+    public Transform getTransform() { return transform; }
+
+    public BufferedImage getTexture() { return texture; }
+    public void setTexture(BufferedImage texture) { this.texture = texture; }
 
     public double clampAngleDifference(double baseAngle, double targetAngle) {
         double diff = normalize(targetAngle - baseAngle);

@@ -11,6 +11,9 @@ import java.util.List;
 
 public class RenderingEngine {
 
+    // TODO: trzeba zrobić renderowanie linii dla torów. Copilot mówi, że z bezierem jest łatwo, bo po prostu rzutuje się punkty kontrolne.
+
+
     private List<RenderingObject> objects = new ArrayList<>();
 
     public void addObject(RenderingObject obj) {

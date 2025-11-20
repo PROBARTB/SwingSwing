@@ -3,7 +3,7 @@ package EALiodufiowAMS2.vehicle;
 import java.awt.event.*;
 import java.util.*;
 
-public class VehicleController implements KeyListener {
+public class PlayerVehicleController implements KeyListener {
     private RailVehicle attachedVehicle;
 
     public void attachTo(RailVehicle vehicle) {
