@@ -1,9 +1,6 @@
-package EALiodufiowAMS2.rendering;
+package EALiodufiowAMS2.rendering.renderingObjects;
 
 import EALiodufiowAMS2.helpers.Transform;
-
-import java.awt.*;
-import java.awt.image.BufferedImage;
 
 public interface RenderingObject {
     Transform getTransform();

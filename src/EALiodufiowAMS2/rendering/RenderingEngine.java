@@ -1,7 +1,10 @@
 package EALiodufiowAMS2.rendering;
 
+import EALiodufiowAMS2.helpers.Transform;
 import EALiodufiowAMS2.helpers.Units;
 import EALiodufiowAMS2.helpers.Vec3;
+import EALiodufiowAMS2.rendering.renderingObjects.Cuboid;
+import EALiodufiowAMS2.rendering.renderingObjects.RenderingObject;
 import EALiodufiowAMS2.world.Camera;
 
 import java.awt.*;
@@ -13,11 +16,32 @@ public class RenderingEngine {
 
     // TODO: trzeba zrobić renderowanie linii dla torów. Copilot mówi, że z bezierem jest łatwo, bo po prostu rzutuje się punkty kontrolne.
 
+    /* TODO globalne:
+        VehicleRenderer,
+        przepisać cały system torów: segmenty + renderer,
+        Game,
+        Scene,
+        World,
+        zaimplementować actions do testów + PlayerVechicleController,
+        T E S T O W A Ć,
+        przygotować tekstury 120Na,
+        zaimplementować SwitchSegment z działającym przełączaniem,
+        drzwi w 120Na,
+        różne kontrolery w Tram i co za tym idzie w 120NA (czuwak, drzwi, dzwonek, stacyjka),
+        przystanki,
+        skrzyżowania,
+        poruszające się tło + inne obiekty dekoracyjne przy torach,
+
+    */
 
     private List<RenderingObject> objects = new ArrayList<>();
 
     public void addObject(RenderingObject obj) {
         objects.add(obj);
+    }
+
+    public void setObjects(List<RenderingObject> objects) {
+        this.objects = objects;
     }
 
     public void clearObjects() {
@@ -26,6 +50,14 @@ public class RenderingEngine {
 
     public void update(Graphics2D g2) {
         for (RenderingObject obj : objects) {
+
+            // DEBUG
+            Vec3 pos__ = obj.getTransform().getPos();
+            Vec3 dir__ = obj.getTransform().getDir();
+            Vec3 size__ = obj.getTransform().getSize();
+            System.out.printf("RenderingEngine: %s POS(%f, %f, %f) DIR(%f, %f, %f) SIZE(%f, %f, %f)\n", obj.getType(), pos__.x, pos__.y, pos__.z, dir__.x, dir__.y, dir__.z, size__.x, size__.y, size__.z);
+            //
+
             switch (obj.getType()) {
                 case "cuboid":
                     Cuboid cuboid = (Cuboid) obj;
@@ -50,6 +82,23 @@ public class RenderingEngine {
     public void setCamera(Camera cam) {
         this.camera = cam;
     }
+
+    public Transform getTransformRelativeToCamera(Transform transform) {
+        if (camera == null) throw new IllegalStateException("Camera not set");
+
+        Transform camt = new Transform(camera.getTransform());
+        Transform t = new Transform(transform);
+
+        t.getPos().sub(camt.getPos());
+        t.getPos().add(camt.getSize().scale(0.5));
+
+        t.getDir().sub(camt.getDir());
+
+        System.out.printf("getTransformRelativeToCamera: %s\n", t.toString());
+
+        return t;
+    }
+
 
     private Point project(double xm, double ym, double zm) {
         double f = 1.0 / (1.0 + (zm / k));
@@ -136,10 +185,9 @@ public class RenderingEngine {
     public void drawRectangleRelativeToCamera(Graphics2D g2, Vec3 worldPos, Vec3 worldDir, Vec3 size, BufferedImage texture, Color color) {
         if (camera == null) throw new IllegalStateException("Camera not set");
 
-        Vec3 relativePos = worldPos.sub(camera.getPos());
-        Vec3 relativeDir = worldDir.sub(camera.getDir());
+        Transform relativeTransform = getTransformRelativeToCamera( new Transform(worldPos, worldDir, size));
 
-        drawRectangle3D(g2, relativePos, relativeDir, size, texture, color);
+        drawRectangle3D(g2, relativeTransform.getPos(), relativeTransform.getDir(), relativeTransform.getSize(), texture, color);
     }
 
     public void drawCuboid(Graphics2D g2, Vec3 posBottomCenter, Vec3 dir, Vec3 size, List<Surface> surfaces) {
@@ -147,11 +195,11 @@ public class RenderingEngine {
         double h = size.y;
         double d = size.z;
 
-        Vec3 forward = dir.normalize();
+        Vec3 forward = new Vec3(dir);
         Vec3 up = new Vec3(0, 1, 0);
         Vec3 right = forward.cross(up).normalize();
         up = right.cross(forward).normalize();
-        Vec3 bottomCenter = posBottomCenter;
+        Vec3 bottomCenter = new Vec3(posBottomCenter);
         Vec3 center = bottomCenter.add(up.scale(h / 2.0));
 
         for (Surface s : surfaces) {
@@ -206,9 +254,15 @@ public class RenderingEngine {
     public void drawCuboidRelativeToCamera(Graphics2D g2, Vec3 worldPos, Vec3 worldDir, Vec3 size, List<Surface> surfaces) {
         if (camera == null) throw new IllegalStateException("Camera not set");
 
-        Vec3 relativePos = worldPos.sub(camera.getPos());
-        Vec3 relativeDir = worldDir.sub(camera.getDir());
+        Transform relativeTransform = getTransformRelativeToCamera( new Transform(worldPos, worldDir, size));
 
-        drawCuboid(g2, relativePos, relativeDir, size, surfaces);
+        drawCuboid(g2, relativeTransform.getPos(), relativeTransform.getDir(), relativeTransform.getSize(), surfaces);
+
+        // DEBUG
+        Vec3 pos__ = camera.getTransform().getPos();
+        Vec3 dir__ = camera.getTransform().getDir();
+        Vec3 size__ = camera.getTransform().getSize();
+        System.out.printf("drawCuboidRelativeToCamera: camera POS(%f, %f, %f) DIR(%f, %f, %f) SIZE(%f, %f, %f)\n", pos__.x, pos__.y, pos__.z, dir__.x, dir__.y, dir__.z, size__.x, size__.y, size__.z);
+        //
     }
 }

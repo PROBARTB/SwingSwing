@@ -23,7 +23,7 @@ public abstract class RailVehicle {
     private double posOnTrack;     // pos in meters on currentTrackSegment
     private double distanceTravelled;
 
-    public RailVehicle(String id, List<Section> sections, List<Joint> joints ) {
+    public RailVehicle(String id, List<Section> sections, List<Joint> joints, String currentTrackSegmentId, double posOnTrack) {
         this.id = id;
         this.keyBindings = new HashMap<>();
 
@@ -37,7 +37,8 @@ public abstract class RailVehicle {
         this.isPowered = true; // temp true
         this.isDriveEnabled = true; // temp true
         this.driveDirection = 1;
-        this.posOnTrack = 0.0;
+        this.currentTrackSegmentId = currentTrackSegmentId;
+        this.posOnTrack = posOnTrack;
         this.distanceTravelled = 0.0;
     }
 

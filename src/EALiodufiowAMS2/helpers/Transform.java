@@ -19,6 +19,12 @@ public class Transform {
         this.size = size;
     }
 
+    public Transform(Transform transform) {
+        this.pos = new Vec3(transform.getPos());
+        this.dir = new Vec3(transform.getDir());
+        this.size = new Vec3(transform.getSize());
+    }
+
     public Vec3 getPos() { return pos; }
     public void setPos(Vec3 position) { this.pos = position; }
 
@@ -26,7 +32,7 @@ public class Transform {
     public void setDir(Vec3 rotation) { this.dir = rotation; }
 
     public Vec3 getSize() { return size; }
-    public void setSize(Vec3 scale) { this.size = size; }
+    public void setSize(Vec3 size) { this.size = size; }
 
 
     public void translate(Vec3 delta) {
@@ -35,5 +41,14 @@ public class Transform {
 
     public void rotate(Vec3 delta) {
         this.dir.add(delta);
+    }
+
+    @Override
+    public String toString() {
+        return "Transform{" +
+                "pos=" + pos +
+                ", dir=" + dir +
+                ", size=" + size +
+                '}';
     }
 }

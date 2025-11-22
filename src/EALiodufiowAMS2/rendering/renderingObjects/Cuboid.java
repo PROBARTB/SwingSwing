@@ -1,6 +1,7 @@
-package EALiodufiowAMS2.rendering;
+package EALiodufiowAMS2.rendering.renderingObjects;
 
 import EALiodufiowAMS2.helpers.Transform;
+import EALiodufiowAMS2.rendering.Surface;
 
 import java.util.List;
 import java.util.Objects;

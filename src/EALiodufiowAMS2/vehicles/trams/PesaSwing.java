@@ -8,8 +8,8 @@ import java.awt.image.BufferedImage;
 import java.util.*;
 
 public class PesaSwing extends Tram {
-    public PesaSwing(String id) {
-        super(id, createSections(), createJoints());
+    public PesaSwing(String id, String currentTrackSegmentId, double posOnTrack) {
+        super(id, createSections(), createJoints(), currentTrackSegmentId, posOnTrack);
     }
 
     private static List<Section> createSections() {
