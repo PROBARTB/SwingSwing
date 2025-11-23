@@ -1,6 +1,7 @@
 package EALiodufiowAMS2.rendering.renderingObjects;
 
 import EALiodufiowAMS2.helpers.Transform;
+import EALiodufiowAMS2.rendering.FaceType;
 import EALiodufiowAMS2.rendering.Surface;
 
 import java.util.List;
@@ -25,7 +26,7 @@ public class Cuboid implements RenderingObject {
         return "cuboid";
     }
 
-    public Surface getSurface(String type) {
+    public Surface getSurface(FaceType type) {
         for (Surface s : surfaces) {
             if (Objects.equals(s.getType(), type)) {
                 return s;
@@ -42,7 +43,7 @@ public class Cuboid implements RenderingObject {
         surfaces.add(surface);
     }
 
-    public void removeSurface(String type) {
+    public void removeSurface(FaceType type) {
         surfaces.removeIf(s -> Objects.equals(s.getType(), type));
     }
 }

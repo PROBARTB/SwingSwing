@@ -7,6 +7,7 @@ import EALiodufiowAMS2.rendering.RenderingEngine;
 import EALiodufiowAMS2.rendering.renderingObjects.RenderingObject;
 import EALiodufiowAMS2.rendering.renderers.Renderer;
 import EALiodufiowAMS2.world.Camera;
+import EALiodufiowAMS2.world.GamePanel;
 import EALiodufiowAMS2.world.World;
 
 import javax.swing.*;
@@ -26,7 +27,7 @@ public class ScenePanel extends JPanel {
 
     public ScenePanel(World world, double viewportWidth, double viewportHeight) {
         this.world = world;
-        this.camera = new Camera(new Vec3(viewportWidth / Units.M_TO_PX, viewportHeight / Units.M_TO_PX, 0));
+        this.camera = new Camera(new Vec3(viewportWidth / Units.M_TO_PX, viewportHeight / Units.M_TO_PX, 0), new Vec3(0, 0.5, -5), new Vec3(0, 0, 0), 75);
         this.renderingEngine.setCamera(this.camera);
         setDoubleBuffered(true);
 
@@ -39,8 +40,7 @@ public class ScenePanel extends JPanel {
                 double h = (double)getHeight();
                 camera.setSize(w / Units.M_TO_PX, h / Units.M_TO_PX);
 
-                System.out.println("ScenePanel resized: " +
-                        w + "x" + h);
+                System.out.println("ScenePanel resized: " + w + "x" + h);
             }
         });
 
@@ -50,6 +50,13 @@ public class ScenePanel extends JPanel {
 
     public void attachCameraTo(Transform attachedTransform) {
         camera.attachTo(attachedTransform);
+    }
+
+    public void setCameraFov(int angle) {
+        camera.setFov(angle);
+    }
+    public int getCameraFov() {
+        return camera.getFov();
     }
 
     public void stepAndRender() {
@@ -73,7 +80,7 @@ public class ScenePanel extends JPanel {
                     Transform t = r.getObjectTransform(id);
                     visible = camera.isInFrustum(t);
                 }
-                System.out.printf("object \"%s\" visible: %b\n", id, visible);
+                //System.out.printf("object \"%s\" visible: %b\n", id, visible);
                 visible = true; // test purposes !!!!
 
                 if (visible) {
@@ -91,6 +98,9 @@ public class ScenePanel extends JPanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         renderingEngine.update((Graphics2D) g);
+
+        g.setColor(Color.BLACK);
+        g.drawString("FPS: " + ((GamePanel) SwingUtilities.getWindowAncestor(this)).currentFps, 10, 20);
     }
 }
 

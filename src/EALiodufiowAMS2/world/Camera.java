@@ -8,16 +8,22 @@ public class Camera {
     private Vec3 offsetPos;
     private Vec3 offsetDir;
     private Transform transform;
+    private int fov;
+    private double k;
 
     public Camera(Vec3 size) {
         this.offsetPos = new Vec3(0, 0,0);
         this.offsetDir = new Vec3(0, 0,0);;
         this.transform = new Transform(new Vec3(0, 0, 0),new Vec3(0, 0, 1),size);
+        this.fov = 75;
+        this.k = fovToK(fov, this.transform.getSize().x);
     }
-    public Camera( Vec3 size, Vec3 offsetPos, Vec3 offsetDir) {
+    public Camera( Vec3 size, Vec3 offsetPos, Vec3 offsetDir, int fov) {
         this.offsetPos = offsetPos;
         this.offsetDir = offsetDir;
         this.transform = new Transform(new Vec3(0, 0, 0),new Vec3(0, 0, 1),size);
+        this.fov = fov;
+        this.k = fovToK(fov, this.transform.getSize().x);
     }
 
     public void attachTo(Transform attachedTransform) {
@@ -28,18 +34,11 @@ public class Camera {
     public void update() {
         if (attachedTransform == null) return;
 
-        // DEBUG
-        Vec3 pos__ = attachedTransform.getPos();
-        Vec3 dir__ = attachedTransform.getDir();
-        Vec3 size__ = attachedTransform.getSize();
-        System.out.printf("Camera update: attachedTransform POS(%f, %f, %f) DIR(%f, %f, %f) SIZE(%f, %f, %f)\n", pos__.x, pos__.y, pos__.z, dir__.x, dir__.y, dir__.z, size__.x, size__.y, size__.z);
-        //
+        Vec3 attachedPos = new Vec3(attachedTransform.getPos());
+        Vec3 attachedDir = new Vec3(attachedTransform.getDir());
 
-        Vec3 secPos = attachedTransform.getPos();
-        Vec3 secDir = attachedTransform.getDir();
-
-        this.transform.setPos(secPos.add(offsetPos));
-        this.transform.setDir(secDir.add(offsetDir));
+        this.transform.setPos(attachedPos.add(offsetPos));
+        this.transform.setDir(attachedDir.add(offsetDir));
     }
 
     public boolean isInFrustum(Transform t) {
@@ -61,5 +60,17 @@ public class Camera {
     public void setSize(double w, double h) {
         this.transform.setSize(new Vec3(w, h, 0));
         System.out.println(w +"x"+ h + " " + this.transform.getSize());
+    }
+
+    public int getFov() { return fov; }
+    public void setFov(int fov) {
+        this.fov = fov;
+        this.k = fovToK(fov, this.transform.getSize().x);
+    }
+    public double getK() { return this.k; }
+
+    public static double fovToK(double fovDeg, double screenWidthM) {
+        double fovRad = Math.toRadians(fovDeg);
+        return screenWidthM / (2.0 * Math.tan(fovRad / 2.0));
     }
 }

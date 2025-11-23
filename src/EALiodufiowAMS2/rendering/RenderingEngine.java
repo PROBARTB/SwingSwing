@@ -1,8 +1,6 @@
 package EALiodufiowAMS2.rendering;
 
-import EALiodufiowAMS2.helpers.Transform;
-import EALiodufiowAMS2.helpers.Units;
-import EALiodufiowAMS2.helpers.Vec3;
+import EALiodufiowAMS2.helpers.*;
 import EALiodufiowAMS2.rendering.renderingObjects.Cuboid;
 import EALiodufiowAMS2.rendering.renderingObjects.RenderingObject;
 import EALiodufiowAMS2.world.Camera;
@@ -17,11 +15,13 @@ public class RenderingEngine {
     // TODO: trzeba zrobić renderowanie linii dla torów. Copilot mówi, że z bezierem jest łatwo, bo po prostu rzutuje się punkty kontrolne.
 
     /* TODO globalne:
+        ! naprawianie RenderingEngine
+        Vec3 metody nadpisują, a Matrix3 zwracają nowe i niespójne jest -> zmienić Vec3 i zaktualizować gdzie używane
         VehicleRenderer,
         przepisać cały system torów: segmenty + renderer,
-        Game,
-        Scene,
-        World,
+        ✅ Game,
+        ✅ Scene,
+        ✅ World,
         zaimplementować actions do testów + PlayerVechicleController,
         T E S T O W A Ć,
         przygotować tekstury 120Na,
@@ -52,10 +52,7 @@ public class RenderingEngine {
         for (RenderingObject obj : objects) {
 
             // DEBUG
-            Vec3 pos__ = obj.getTransform().getPos();
-            Vec3 dir__ = obj.getTransform().getDir();
-            Vec3 size__ = obj.getTransform().getSize();
-            System.out.printf("RenderingEngine: %s POS(%f, %f, %f) DIR(%f, %f, %f) SIZE(%f, %f, %f)\n", obj.getType(), pos__.x, pos__.y, pos__.z, dir__.x, dir__.y, dir__.z, size__.x, size__.y, size__.z);
+            System.out.println("RenderingEngine update: object " + obj.getTransform().toString());
             //
 
             switch (obj.getType()) {
@@ -76,7 +73,6 @@ public class RenderingEngine {
         }
     }
 
-    private double k = 2.0; // perspective coefficient in meters (effective focal distance)
     private Camera camera;
 
     public void setCamera(Camera cam) {
@@ -90,27 +86,37 @@ public class RenderingEngine {
         Transform t = new Transform(transform);
 
         t.getPos().sub(camt.getPos());
-        t.getPos().add(camt.getSize().scale(0.5));
+        //t.getPos().add(camt.getSize().scale(0.5));
 
         t.getDir().sub(camt.getDir());
-
-        System.out.printf("getTransformRelativeToCamera: %s\n", t.toString());
 
         return t;
     }
 
-
     private Point project(double xm, double ym, double zm) {
-        double f = 1.0 / (1.0 + (zm / k));
+        // Środek ekranu
+        int cx = (int) Math.round((this.camera.getTransform().getSize().x * Units.M_TO_PX) / 2);
+        int cy = (int) Math.round((this.camera.getTransform().getSize().y * Units.M_TO_PX) / 2);
 
-        double xScaled_m = xm * f;
-        double yScaled_m = ym * f;
+        // Punkt musi być przed kamerą
+        if (zm <= 0) return null;
 
-        int xp = (int) Math.round(xScaled_m * Units.M_TO_PX);
-        int yp = (int) Math.round(yScaled_m * Units.M_TO_PX);
+        double k = camera.getK();
+        System.out.println("k " + k);
+
+        // Projekcja perspektywiczna
+        double xProj = (xm * k) / zm;
+        double yProj = (ym * k) / zm;
+
+        // Skalowanie i przesunięcie
+        int xp = (int) Math.round(xProj * Units.M_TO_PX) + cx;
+        int yp = (int) Math.round(-yProj * Units.M_TO_PX) + cy;
 
         return new Point(xp, yp);
     }
+
+
+
 
     public void drawPolygon(Graphics2D g2, Point[] pts, BufferedImage texture, Color color) {
         if (texture != null) {
@@ -153,34 +159,46 @@ public class RenderingEngine {
         );
     }
 
-    public void drawRectangle3D(Graphics2D g2, Vec3 pos, Vec3 dir, Vec3 size,
-                                BufferedImage texture, Color color) {
+    public void drawOrientedRectangle(Graphics2D g2, Vec3 posCenter, Matrix3 rot, double width, double height, BufferedImage texture, Color color) {
+        System.out.println("drawOrientedRectangle:");
+        System.out.println("  posCenter = " + posCenter);
+        System.out.println("  width = " + width + ", height = " + height);
+        System.out.println("  rotation matrix:");
+        System.out.printf("    [%.3f %.3f %.3f]\n", rot.m00, rot.m01, rot.m02);
+        System.out.printf("    [%.3f %.3f %.3f]\n", rot.m10, rot.m11, rot.m12);
+        System.out.printf("    [%.3f %.3f %.3f]\n", rot.m20, rot.m21, rot.m22);
 
-        Vec3 dirN = dir.normalize();
-
-        double lenXZ = Math.sqrt(dirN.x*dirN.x + dirN.z*dirN.z);
-        double ux = lenXZ > 0 ? dirN.x / lenXZ : 1.0;
-        double uz = lenXZ > 0 ? dirN.z / lenXZ : 0.0;
-
-        double vy = 1.0, vz = 0.0;
-
-        double w_m = size.x; // meters
-        double h_m = size.y; // meters
-
-        double[][] corners_m = {
-                {pos.x - (w_m/2)*ux, pos.y - (h_m/2)*vy, pos.z - (w_m/2)*uz}, // left-bottom
-                {pos.x + (w_m/2)*ux, pos.y - (h_m/2)*vy, pos.z + (w_m/2)*uz}, // right-bottom
-                {pos.x + (w_m/2)*ux, pos.y + (h_m/2)*vy, pos.z + (w_m/2)*uz}, // right-top
-                {pos.x - (w_m/2)*ux, pos.y + (h_m/2)*vy, pos.z - (w_m/2)*uz}  // left-top
+        Vec3[] cornersLocal = new Vec3[] {
+                new Vec3(-width/2.0, -height/2.0, 0.0),
+                new Vec3(+width/2.0, -height/2.0, 0.0),
+                new Vec3(+width/2.0, +height/2.0, 0.0),
+                new Vec3(-width/2.0, +height/2.0, 0.0)
         };
 
         Point[] pts = new Point[4];
         for (int i = 0; i < 4; i++) {
-            pts[i] = project(corners_m[i][0], corners_m[i][1], corners_m[i][2]);
+            Vec3 local = cornersLocal[i];
+            Vec3 world = rot.multiply(local).add(posCenter);
+            pts[i] = project(world.x, world.y, world.z);
+
+            System.out.printf("  corner %d local: (%.3f, %.3f, %.3f)\n", i, local.x, local.y, local.z);
+            System.out.printf("  corner %d world: (%.3f, %.3f, %.3f)\n", i, world.x, world.y, world.z);
+            if (pts[i] != null) System.out.printf("  corner %d projected: (%d, %d)\n", i, pts[i].x, pts[i].y);
+            else System.out.printf("  corner %d NOT projected - behind camera\n", i);
+
+            if(pts[i] == null) return;
         }
 
         drawPolygon(g2, pts, texture, color);
     }
+
+
+    public void drawRectangle3D(Graphics2D g2, Vec3 posCenter, Vec3 dir, Vec3 size, BufferedImage texture, Color color) {
+        Matrix3 R = Matrix3.fromEuler(dir.x, dir.y, dir.z);
+
+        drawOrientedRectangle(g2, posCenter, R, size.x, size.y, texture, color);
+    }
+
 
     public void drawRectangleRelativeToCamera(Graphics2D g2, Vec3 worldPos, Vec3 worldDir, Vec3 size, BufferedImage texture, Color color) {
         if (camera == null) throw new IllegalStateException("Camera not set");
@@ -190,64 +208,99 @@ public class RenderingEngine {
         drawRectangle3D(g2, relativeTransform.getPos(), relativeTransform.getDir(), relativeTransform.getSize(), texture, color);
     }
 
-    public void drawCuboid(Graphics2D g2, Vec3 posBottomCenter, Vec3 dir, Vec3 size, List<Surface> surfaces) {
-        double w = size.x;
-        double h = size.y;
-        double d = size.z;
+    /*
+        CUBOID
+     */
+    private class FaceResult {
+        Vec3 position;
+        Matrix3 rotation;
+        double width;
+        double height;
+        FaceResult(Vec3 p, Matrix3 r, double w, double h) { position = p; rotation = r; width = w; height = h; }
 
-        Vec3 forward = new Vec3(dir);
-        Vec3 up = new Vec3(0, 1, 0);
-        Vec3 right = forward.cross(up).normalize();
-        up = right.cross(forward).normalize();
-        Vec3 bottomCenter = new Vec3(posBottomCenter);
-        Vec3 center = bottomCenter.add(up.scale(h / 2.0));
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            sb.append("FaceResult {\n");
+            sb.append("  position: ").append(position).append("\n");
+            sb.append("  rotation:\n");
+            sb.append(String.format("    [%.3f %.3f %.3f]\n", rotation.m00, rotation.m01, rotation.m02));
+            sb.append(String.format("    [%.3f %.3f %.3f]\n", rotation.m10, rotation.m11, rotation.m12));
+            sb.append(String.format("    [%.3f %.3f %.3f]\n", rotation.m20, rotation.m21, rotation.m22));
+            sb.append("  width: ").append(String.format("%.3f", width)).append("\n");
+            sb.append("  height: ").append(String.format("%.3f", height)).append("\n");
+            sb.append("}");
+            return sb.toString();
+        }
+    }
+
+    private FaceResult computeFace(Vec3 posBottomCenter, Vec3 size, Matrix3 globalRot, FaceType type) {
+        Vec3 localOffset;
+        Matrix3 localRot;
+        double width, height;
+
+        switch (type) {
+            case FRONT:
+                localOffset = new Vec3(0, size.y/2, -size.z/2);
+                localRot = Matrix3.identity();
+                width = size.x; height = size.y;
+                break;
+            case BACK:
+                localOffset = new Vec3(0, size.y/2, size.z/2);
+                localRot = Matrix3.rotY(Math.PI);
+                width = size.x; height = size.y;
+                break;
+            case TOP:
+                localOffset = new Vec3(0, size.y, 0);
+                localRot = Matrix3.rotX(-Math.PI/2);
+                width = size.x; height = size.z;
+                break;
+            case BOTTOM:
+                localOffset = new Vec3(0, 0, 0);
+                localRot = Matrix3.rotX(Math.PI/2);
+                width = size.x; height = size.z;
+                break;
+            case RIGHT:
+                localOffset = new Vec3(size.x/2, size.y/2, 0);
+                localRot = Matrix3.rotY(Math.PI/2);
+                width = size.z; height = size.y;
+                break;
+            case LEFT:
+                localOffset = new Vec3(-size.x/2, size.y/2, 0);
+                localRot = Matrix3.rotY(-Math.PI/2);
+                width = size.z; height = size.y;
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown face type");
+        }
+
+        Vec3 worldOffset = globalRot.multiply(localOffset);
+        Vec3 position = new Vec3(
+                posBottomCenter.x + worldOffset.x,
+                posBottomCenter.y + worldOffset.y,
+                posBottomCenter.z + worldOffset.z
+        );
+
+        Matrix3 faceRot = globalRot.multiply(localRot);
+
+        return new FaceResult(position, faceRot, width, height);
+    }
+
+    public void drawCuboid(Graphics2D g2, Vec3 posBottomCenter, Vec3 dir, Vec3 size, List<Surface> surfaces) {
+        Matrix3 globalRot = Matrix3.fromEuler(dir.x, dir.y, dir.z);
 
         for (Surface s : surfaces) {
             BufferedImage tex = s.texture;
             Color col = s.color;
 
-            Vec3 faceCenter = null;
-            Vec3 faceDir = null;
-            Vec3 faceSize = null;
+            FaceResult face = computeFace(posBottomCenter, size, globalRot, s.getType());
 
-            // TRZEBA SPRAWDZIĆ CZY TE ŚCIANY TO DOBRZE SĄ POLICZONE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            switch (s.getType()) {
-                case "front":
-                    faceCenter = center.add(forward.scale(d / 2.0));
-                    faceDir = forward;
-                    faceSize = new Vec3(w, h, 0);
-                    break;
-                case "back":
-                    faceCenter = center.add(forward.scale(-d / 2.0));
-                    faceDir = forward.scale(-1);
-                    faceSize = new Vec3(w, h, 0);
-                    break;
-                case "left":
-                    faceCenter = center.add(right.scale(-w / 2.0));
-                    faceDir = right.scale(-1);
-                    faceSize = new Vec3(d, h, 0);
-                    break;
-                case "right":
-                    faceCenter = center.add(right.scale(w / 2.0));
-                    faceDir = right;
-                    faceSize = new Vec3(d, h, 0);
-                    break;
-                case "top":
-                    faceCenter = center.add(up.scale(h / 2.0));
-                    faceDir = up;
-                    faceSize = new Vec3(w, d, 0);
-                    break;
-                case "bottom":
-                    faceCenter = center.add(up.scale(-h / 2.0));
-                    faceDir = up.scale(-1);
-                    faceSize = new Vec3(w, d, 0);
-                    break;
-                default:
-                    System.out.printf("Unknown Cuboid Surface type %s", s.getType());
-                    continue;
-            }
+            // DEBUG
+            //System.out.println("drawCuboid surface " + s.getType() + ": " + face.toString());
+            System.out.println("drawCuboid surface " + s.getType());
+            //
 
-            drawRectangle3D(g2, faceCenter, faceDir, faceSize, tex, col);
+            drawOrientedRectangle(g2, face.position, face.rotation, face.width, face.height, tex, col);
         }
     }
 
@@ -256,13 +309,11 @@ public class RenderingEngine {
 
         Transform relativeTransform = getTransformRelativeToCamera( new Transform(worldPos, worldDir, size));
 
+        // DEBUG
+        System.out.println("drawCuboidRelativeToCamera: relativeTransform " + relativeTransform.toString());
+        //
+
         drawCuboid(g2, relativeTransform.getPos(), relativeTransform.getDir(), relativeTransform.getSize(), surfaces);
 
-        // DEBUG
-        Vec3 pos__ = camera.getTransform().getPos();
-        Vec3 dir__ = camera.getTransform().getDir();
-        Vec3 size__ = camera.getTransform().getSize();
-        System.out.printf("drawCuboidRelativeToCamera: camera POS(%f, %f, %f) DIR(%f, %f, %f) SIZE(%f, %f, %f)\n", pos__.x, pos__.y, pos__.z, dir__.x, dir__.y, dir__.z, size__.x, size__.y, size__.z);
-        //
     }
 }
