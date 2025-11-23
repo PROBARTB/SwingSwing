@@ -16,10 +16,10 @@ public class GamePanel extends JFrame {
     private long lastFpsTime = System.nanoTime();
     public int currentFps = 0;
 
-    public GamePanel() {
+    public GamePanel(int resWidth, int resHeight) {
         super("Swing Swing");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1000, 700);
+        setSize(resWidth, resHeight);
 
         JMenuBar menuBar = new JMenuBar();
         JButton pauseButton = new JButton("Pause");

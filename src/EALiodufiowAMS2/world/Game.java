@@ -8,6 +8,10 @@ import EALiodufiowAMS2.world.scenes.SceneTest3d;
 public class Game {
     public static void main(String[] args) {
         javax.swing.SwingUtilities.invokeLater(() -> {
+
+            int resWidth = 2560;
+            int resHeight = 1440;
+
             World world = new World();
             //world.addTrackSegment(new StraightSegment("0001", 50)); // id + length
 
@@ -15,9 +19,9 @@ public class Game {
 
             //ScenePanel scene1 = new Scene1(world, 800, 600);
 
-            ScenePanel sceneTest3d = new SceneTest3d(world, 800, 600);
+            ScenePanel sceneTest3d = new SceneTest3d(world, resWidth, resHeight);
 
-            GamePanel panel = new GamePanel();
+            GamePanel panel = new GamePanel(resWidth, resHeight);
             panel.setScene(sceneTest3d);
             panel.setVisible(true);
         });

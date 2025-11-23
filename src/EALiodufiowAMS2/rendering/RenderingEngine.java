@@ -39,17 +39,34 @@ public class RenderingEngine {
     public void addObject(RenderingObject obj) {
         objects.add(obj);
     }
-
     public void setObjects(List<RenderingObject> objects) {
         this.objects = objects;
     }
-
     public void clearObjects() {
         objects.clear();
     }
 
+    private final Rasterizer rasterizer;
+
+    public void clear() {
+        rasterizer.clearBuffers(0xFF4D5861); // backgroundColor
+    }
+    public BufferedImage getFrameBuffer() {
+        return rasterizer.getFrameBuffer();
+    }
+    public void setBufferSize(int w, int h) {
+        rasterizer.setBufferSize(w, h);
+    }
+
+    public RenderingEngine(int bufferWidth, int bufferHeight) {
+        this.rasterizer = new Rasterizer(bufferWidth, bufferHeight);
+    }
+
     public void update(Graphics2D g2) {
+        System.out.println("RenderingEngine update");
+        clear(); // clear buffer (may not be necessary, idk)
         for (RenderingObject obj : objects) {
+
 
             // DEBUG
             System.out.println("RenderingEngine update: object " + obj.getTransform().toString());
@@ -102,7 +119,7 @@ public class RenderingEngine {
         if (zm <= 0) return null;
 
         double k = camera.getK();
-        System.out.println("k " + k);
+        //System.out.println("k " + k);
 
         // Projekcja perspektywiczna
         double xProj = (xm * k) / zm;
@@ -115,10 +132,8 @@ public class RenderingEngine {
         return new Point(xp, yp);
     }
 
-
-
-
-    public void drawPolygon(Graphics2D g2, Point[] pts, BufferedImage texture, Color color) {
+    // uses Swing Graphics2D g2 to render a polygon without respecting Z, which causes overlapping. Use Rasterizer.drawPolygon() instead.
+    public void drawPolygonSwing(Graphics2D g2, Point[] pts, BufferedImage texture, Color color) {
         if (texture != null) {
             int columns = texture.getWidth();
             for (int i = 0; i < columns; i++) {
@@ -160,13 +175,13 @@ public class RenderingEngine {
     }
 
     public void drawOrientedRectangle(Graphics2D g2, Vec3 posCenter, Matrix3 rot, double width, double height, BufferedImage texture, Color color) {
-        System.out.println("drawOrientedRectangle:");
-        System.out.println("  posCenter = " + posCenter);
-        System.out.println("  width = " + width + ", height = " + height);
-        System.out.println("  rotation matrix:");
-        System.out.printf("    [%.3f %.3f %.3f]\n", rot.m00, rot.m01, rot.m02);
-        System.out.printf("    [%.3f %.3f %.3f]\n", rot.m10, rot.m11, rot.m12);
-        System.out.printf("    [%.3f %.3f %.3f]\n", rot.m20, rot.m21, rot.m22);
+//        System.out.println("drawOrientedRectangle:");
+//        System.out.println("  posCenter = " + posCenter);
+//        System.out.println("  width = " + width + ", height = " + height);
+//        System.out.println("  rotation matrix:");
+//        System.out.printf("    [%.3f %.3f %.3f]\n", rot.m00, rot.m01, rot.m02);
+//        System.out.printf("    [%.3f %.3f %.3f]\n", rot.m10, rot.m11, rot.m12);
+//        System.out.printf("    [%.3f %.3f %.3f]\n", rot.m20, rot.m21, rot.m22);
 
         Vec3[] cornersLocal = new Vec3[] {
                 new Vec3(-width/2.0, -height/2.0, 0.0),
@@ -176,20 +191,23 @@ public class RenderingEngine {
         };
 
         Point[] pts = new Point[4];
+        double[] ptsDepths = new double[4];
         for (int i = 0; i < 4; i++) {
             Vec3 local = cornersLocal[i];
-            Vec3 world = rot.multiply(local).add(posCenter);
-            pts[i] = project(world.x, world.y, world.z);
+            Vec3 global = rot.multiply(local).add(posCenter);
+            pts[i] = project(global.x, global.y, global.z);
+            ptsDepths[i] = global.z;
 
-            System.out.printf("  corner %d local: (%.3f, %.3f, %.3f)\n", i, local.x, local.y, local.z);
-            System.out.printf("  corner %d world: (%.3f, %.3f, %.3f)\n", i, world.x, world.y, world.z);
-            if (pts[i] != null) System.out.printf("  corner %d projected: (%d, %d)\n", i, pts[i].x, pts[i].y);
-            else System.out.printf("  corner %d NOT projected - behind camera\n", i);
+//            System.out.printf("  corner %d local: (%.3f, %.3f, %.3f)\n", i, local.x, local.y, local.z);
+//            System.out.printf("  corner %d global: (%.3f, %.3f, %.3f)\n", i, global.x, global.y, global.z);
+//            if (pts[i] != null) System.out.printf("  corner %d projected: (%d, %d)\n", i, pts[i].x, pts[i].y);
+//            else System.out.printf("  corner %d NOT projected - behind camera\n", i);
 
             if(pts[i] == null) return;
         }
 
-        drawPolygon(g2, pts, texture, color);
+        //drawPolygonSwing(g2, pts, texture, color); //<--- deprecated
+        rasterizer.drawPolygon(pts, ptsDepths, texture, color);
     }
 
 
@@ -242,12 +260,12 @@ public class RenderingEngine {
         switch (type) {
             case FRONT:
                 localOffset = new Vec3(0, size.y/2, -size.z/2);
-                localRot = Matrix3.identity();
+                localRot = Matrix3.rotY(Math.PI);
                 width = size.x; height = size.y;
                 break;
             case BACK:
                 localOffset = new Vec3(0, size.y/2, size.z/2);
-                localRot = Matrix3.rotY(Math.PI);
+                localRot = Matrix3.identity();
                 width = size.x; height = size.y;
                 break;
             case TOP:
@@ -297,7 +315,7 @@ public class RenderingEngine {
 
             // DEBUG
             //System.out.println("drawCuboid surface " + s.getType() + ": " + face.toString());
-            System.out.println("drawCuboid surface " + s.getType());
+            //System.out.println("drawCuboid surface " + s.getType());
             //
 
             drawOrientedRectangle(g2, face.position, face.rotation, face.width, face.height, tex, col);

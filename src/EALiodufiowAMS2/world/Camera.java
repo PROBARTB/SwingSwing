@@ -1,5 +1,6 @@
 package EALiodufiowAMS2.world;
 
+import EALiodufiowAMS2.helpers.Matrix3;
 import EALiodufiowAMS2.helpers.Transform;
 import EALiodufiowAMS2.helpers.Vec3;
 
@@ -34,12 +35,29 @@ public class Camera {
     public void update() {
         if (attachedTransform == null) return;
 
+        // Pozycja i rotacja obiektu
         Vec3 attachedPos = new Vec3(attachedTransform.getPos());
         Vec3 attachedDir = new Vec3(attachedTransform.getDir());
 
-        this.transform.setPos(attachedPos.add(offsetPos));
-        this.transform.setDir(attachedDir.add(offsetDir));
+        // Offset kamery w lokalnym układzie obiektu (np. przed nim)
+        Vec3 localOffset = offsetPos;
+
+        // Macierz rotacji z Eulerów (pitch=X, yaw=Y, roll=Z)
+        Matrix3 rot = Matrix3.fromEuler(attachedDir.x, attachedDir.y, attachedDir.z);
+
+        // Przekształcenie offsetu do globalnych współrzędnych
+        Vec3 worldOffset = rot.multiply(localOffset);
+
+        // Globalna pozycja kamery
+        Vec3 cameraPos = attachedPos.add(worldOffset);
+
+        // Ustawienie transformacji kamery
+        this.transform.setPos(cameraPos);
+        this.transform.setDir(attachedDir);
+
+        System.out.println("Camera update: pos=" + cameraPos + " dir=" + attachedDir);
     }
+
 
     public boolean isInFrustum(Transform t) {
         Vec3 camPos = transform.getPos();

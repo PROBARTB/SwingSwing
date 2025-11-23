@@ -13,21 +13,25 @@ import EALiodufiowAMS2.world.World;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
 import java.util.*;
 import java.util.List;
 
 public class ScenePanel extends JPanel {
     private final World world;
     private final List<Renderer> renderers = new ArrayList<>();
-    private final RenderingEngine renderingEngine = new RenderingEngine();
+    private final RenderingEngine renderingEngine;
     protected final Camera camera;
 
     private List<RenderingObject> currentFrameObjects = new ArrayList<>();
     private long lastNanoTime = System.nanoTime();
 
-    public ScenePanel(World world, double viewportWidth, double viewportHeight) {
+    public ScenePanel(World world, int resWidth, int resHeight) {
         this.world = world;
-        this.camera = new Camera(new Vec3(viewportWidth / Units.M_TO_PX, viewportHeight / Units.M_TO_PX, 0), new Vec3(0, 0.5, -5), new Vec3(0, 0, 0), 75);
+
+        this.renderingEngine = new RenderingEngine(resWidth, resHeight);
+
+        this.camera = new Camera(new Vec3(resWidth / Units.M_TO_PX, resHeight / Units.M_TO_PX, 0), new Vec3(0, 0, -5), new Vec3(0, 0, 0), 75);
         this.renderingEngine.setCamera(this.camera);
         setDoubleBuffered(true);
 
@@ -36,9 +40,10 @@ public class ScenePanel extends JPanel {
         addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-                double w = (double)getWidth();
-                double h = (double)getHeight();
-                camera.setSize(w / Units.M_TO_PX, h / Units.M_TO_PX);
+                int w = getWidth();
+                int h = getHeight();
+                camera.setSize((double)w / Units.M_TO_PX, (double)h / Units.M_TO_PX);
+                renderingEngine.setBufferSize(w, h);
 
                 System.out.println("ScenePanel resized: " + w + "x" + h);
             }
@@ -98,6 +103,9 @@ public class ScenePanel extends JPanel {
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         renderingEngine.update((Graphics2D) g);
+
+        BufferedImage frame = renderingEngine.getFrameBuffer();
+        g.drawImage(frame, 0, 0, getWidth(), getHeight(), null);
 
         g.setColor(Color.BLACK);
         g.drawString("FPS: " + ((GamePanel) SwingUtilities.getWindowAncestor(this)).currentFps, 10, 20);

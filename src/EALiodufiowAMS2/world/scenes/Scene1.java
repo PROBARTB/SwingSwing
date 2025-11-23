@@ -5,8 +5,8 @@
 //
 //public class Scene1 extends ScenePanel {
 //
-//    public Scene1(World world, double viewportWidth, double viewportHeight) {
-//        super(world, viewportWidth, viewportHeight);
+//    public Scene1(World world, int resWidth, int resHeight) {
+//        super(world, resWidth, resHeight);
 //
 //        addRenderer(new TracksRenderer(world));
 //        addRenderer(new VehiclesRenderer(world));
