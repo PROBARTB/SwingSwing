@@ -16,9 +16,10 @@ public class RenderingEngine {
 
     /* TODO globalne:
         ! naprawianie RenderingEngine
+        !!!!!!!!!!!!!!!!! zmainić w transform aby nie używać eulerów tylko Matrix3 wszędzie dla obrotu. Ustawianie i toString może być eulerami ale dane matrix !!!!!!!!! To powinno naprawić odbijanie się lustrzane kostki przy obrocie https://copilot.microsoft.com/shares/eQ9T6bP2rMjyRVkj8Sf5V
         Vec3 metody nadpisują, a Matrix3 zwracają nowe i niespójne jest -> zmienić Vec3 i zaktualizować gdzie używane
-        VehicleRenderer,
         przepisać cały system torów: segmenty + renderer,
+        VehicleRenderer,
         ✅ Game,
         ✅ Scene,
         ✅ World,
@@ -102,13 +103,29 @@ public class RenderingEngine {
         Transform camt = new Transform(camera.getTransform());
         Transform t = new Transform(transform);
 
-        t.getPos().sub(camt.getPos());
-        //t.getPos().add(camt.getSize().scale(0.5));
+        // --- Pozycja względna ---
+        Vec3 relPos = t.getPos().sub(camt.getPos());
 
-        t.getDir().sub(camt.getDir());
+        // Obrót kamery
+        Matrix3 camRot = Matrix3.fromEuler(camt.getDir().x, camt.getDir().y, camt.getDir().z);
 
-        return t;
+        // Zastosuj odwrotną rotację kamery do pozycji
+        relPos = camRot.transpose().multiply(relPos);
+
+        // --- Rotacja względna ---
+        Matrix3 objRot = Matrix3.fromEuler(t.getDir().x, t.getDir().y, t.getDir().z);
+        Matrix3 relRot = camRot.transpose().multiply(objRot);
+
+        Vec3 relDir = relRot.toEuler(); // konwersja z powrotem na eulery
+
+        // --- Zwróć nowy transform ---
+        Transform result = new Transform();
+        result.setPos(relPos);
+        result.setDir(relDir);
+
+        return result;
     }
+
 
     private Point project(double xm, double ym, double zm) {
         // Środek ekranu

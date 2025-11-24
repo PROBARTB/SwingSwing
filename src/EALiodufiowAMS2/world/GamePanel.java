@@ -12,6 +12,8 @@ public class GamePanel extends JFrame {
     private Timer timer;
     private boolean paused = false;
 
+    private long lastNanoTime = System.nanoTime();
+
     private int frames = 0;
     private long lastFpsTime = System.nanoTime();
     public int currentFps = 0;
@@ -32,20 +34,26 @@ public class GamePanel extends JFrame {
 
         // 30 FPS → 33 ms
         timer = new Timer(15, e -> {
-            //System.out.println("Timer update");
+            long now = System.nanoTime();
+
             if (scene != null && !paused) {
-                //System.out.println("not null & not paused");
-                scene.stepAndRender();
+                double deltaTime = (now - lastNanoTime) / 1_000_000_000.0;
+                lastNanoTime = now;
+
+                scene.stepAndRender(deltaTime);
 
                 frames++;
-                long now = System.nanoTime();
-                if (now - lastFpsTime >= 1_000_000_000L) { // minęła 1 sekunda
+                if (now - lastFpsTime >= 1_000_000_000L) {
                     currentFps = frames;
                     frames = 0;
                     lastFpsTime = now;
                 }
+            } else {
+                lastNanoTime = now;
             }
         });
+
+
         timer.start();
 
         pauseButton.addActionListener(e -> {

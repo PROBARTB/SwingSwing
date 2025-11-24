@@ -23,20 +23,28 @@ public class RendererTest3d implements Renderer {
         surfaces.add(new Surface(FaceType.LEFT, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"), Color.CYAN));
         surfaces.add(new Surface(FaceType.RIGHT, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"), Color.MAGENTA));
 
+        List<Surface> surfacesColors = new ArrayList<>();
+        surfacesColors.add(new Surface(FaceType.FRONT, null, Color.RED));
+        surfacesColors.add(new Surface(FaceType.BACK, null, Color.GREEN));
+        surfacesColors.add(new Surface(FaceType.TOP, null, Color.BLUE));
+        surfacesColors.add(new Surface(FaceType.BOTTOM, null, Color.YELLOW));
+        surfacesColors.add(new Surface(FaceType.LEFT, null, Color.CYAN));
+        surfacesColors.add(new Surface(FaceType.RIGHT, null, Color.MAGENTA));
+
 
         // drugi cube
         Cuboid cube2 = new Cuboid(new Transform(), surfaces);
         cube2.getTransform().setPos(new Vec3(0, 0, 0));
         cube2.getTransform().setSize(new Vec3(1, 1, 1));
-        cube2.getTransform().setDir(new Vec3(Math.toRadians(90), 0, 0));
+        cube2.getTransform().setDir(new Vec3(Math.toRadians(91), 0, 0));
         cuboids.put("rotatingCube2", cube2);
 
         // pierwszy cube
-//        Cuboid cube1 = new Cuboid(new Transform(), surfaces);
-//        cube1.getTransform().setPos(new Vec3(9.5, 0, 5));
-//        cube1.getTransform().setSize(new Vec3(0.5, 0.5, 0.5));
-//        cube1.getTransform().setDir(new Vec3(0, 0, 0));
-//        cuboids.put("rotatingCube1", cube1);
+        Cuboid cube1 = new Cuboid(new Transform(), surfacesColors);
+        cube1.getTransform().setPos(new Vec3(1, 0, 0));
+        cube1.getTransform().setSize(new Vec3(1, 1, 1));
+        cube1.getTransform().setDir(new Vec3(0, 0, 0));
+        cuboids.put("rotatingCube1", cube1);
 
 //
 //        // trzeci cube
@@ -53,15 +61,15 @@ public class RendererTest3d implements Renderer {
         double deltaRotation = rotationSpeed * deltaTime;
 
         //for (Cuboid cube : cuboids.values()) {
-//        Cuboid cube = cuboids.get("rotatingCube2");
-//            Vec3 dir = cube.getTransform().getDir();
-//            dir = new Vec3(dir.x + deltaRotation, dir.y, dir.z);
-//
-//            if (dir.y >= 360.0) {
-//                dir = new Vec3(dir.x, dir.y - 360.0, dir.z);
-//            }
-//
-//            cube.getTransform().setDir(dir);
+        Cuboid cube = cuboids.get("rotatingCube2");
+            Vec3 dir = cube.getTransform().getDir();
+            dir = new Vec3(dir.x + deltaRotation, dir.y, dir.z);
+
+            if (dir.y >= 360.0) {
+                dir = new Vec3(dir.x, dir.y - 360.0, dir.z);
+            }
+
+            cube.getTransform().setDir(dir);
         //}
     }
 

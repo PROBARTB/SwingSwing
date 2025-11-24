@@ -24,7 +24,6 @@ public class ScenePanel extends JPanel {
     protected final Camera camera;
 
     private List<RenderingObject> currentFrameObjects = new ArrayList<>();
-    private long lastNanoTime = System.nanoTime();
 
     public ScenePanel(World world, int resWidth, int resHeight) {
         this.world = world;
@@ -64,10 +63,7 @@ public class ScenePanel extends JPanel {
         return camera.getFov();
     }
 
-    public void stepAndRender() {
-        long now = System.nanoTime();
-        double deltaTime = (now - lastNanoTime) / 1_000_000_000.0;
-        lastNanoTime = now;
+    public void stepAndRender(double deltaTime) {
 
         for (Renderer r : renderers) {
             r.update(deltaTime);
