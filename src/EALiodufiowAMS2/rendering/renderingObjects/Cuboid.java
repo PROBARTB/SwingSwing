@@ -15,6 +15,9 @@ public class Cuboid implements RenderingObject {
         this.transform = transform;
         this.surfaces = surfaces;
     }
+    public Cuboid(Cuboid cuboid, Transform transform){
+        this(transform, cuboid.getSurfaces());
+    }
 
     @Override
     public Transform getTransform() {

@@ -1,8 +1,8 @@
 package EALiodufiowAMS2.rendering;
 
 import EALiodufiowAMS2.helpers.*;
-import EALiodufiowAMS2.rendering.renderingObjects.Cuboid;
-import EALiodufiowAMS2.rendering.renderingObjects.RenderingObject;
+import EALiodufiowAMS2.rendering.renderingObjects.*;
+import EALiodufiowAMS2.rendering.renderingObjects.Rectangle;
 import EALiodufiowAMS2.world.Camera;
 
 import java.awt.*;
@@ -35,6 +35,7 @@ public class RenderingEngine {
 
     */
 
+    /** RenderingObjects list */
     private List<RenderingObject> objects = new ArrayList<>();
 
     public void addObject(RenderingObject obj) {
@@ -47,6 +48,7 @@ public class RenderingEngine {
         objects.clear();
     }
 
+    /** Rasterizer with Buffers */
     private final Rasterizer rasterizer;
 
     public void clear() {
@@ -59,6 +61,7 @@ public class RenderingEngine {
         rasterizer.setBufferSize(w, h);
     }
 
+    /** RenderingEngine */
     public RenderingEngine(int bufferWidth, int bufferHeight) {
         this.rasterizer = new Rasterizer(bufferWidth, bufferHeight);
     }
@@ -76,14 +79,12 @@ public class RenderingEngine {
             switch (obj.getType()) {
                 case "cuboid":
                     Cuboid cuboid = (Cuboid) obj;
-                    Vec3 posBottomCenter    = cuboid.getTransform().getPos();
-                    Vec3 dir                = cuboid.getTransform().getDir();
-                    Vec3 size               = cuboid.getTransform().getSize();
-                    List<Surface> surfaces  = cuboid.getSurfaces();
-
-                    drawCuboidRelativeToCamera(g2, posBottomCenter, dir, size, surfaces);
+                    drawCuboidRelativeToCamera(cuboid);
                     break;
-
+                case "rectangle":
+                    Rectangle rectangle = (Rectangle) obj;
+                    drawRectangle3DRelativeToCamera(rectangle);
+                    break;
                 default:
                     System.out.printf("Unknown object type: %s%n", obj.getType());
                     break;
@@ -91,6 +92,7 @@ public class RenderingEngine {
         }
     }
 
+    /** Camera */
     private Camera camera;
 
     public void setCamera(Camera cam) {
@@ -100,55 +102,45 @@ public class RenderingEngine {
     public Transform getTransformRelativeToCamera(Transform transform) {
         if (camera == null) throw new IllegalStateException("Camera not set");
 
-        Transform camt = new Transform(camera.getTransform());
-        Transform t = new Transform(transform);
+        Transform camt = camera.getTransform();
 
-        // --- Pozycja względna ---
-        Vec3 relPos = t.getPos().sub(camt.getPos());
-
-        // Obrót kamery
-        Matrix3 camRot = Matrix3.fromEuler(camt.getDir().x, camt.getDir().y, camt.getDir().z);
+        Vec3 relPos = transform.getPos().sub(camt.getPos());
 
         // Zastosuj odwrotną rotację kamery do pozycji
-        relPos = camRot.transpose().multiply(relPos);
+        Quaternion camRotInv = camt.getRot().normalize().conjugate(); // dla unit quaternion odwrotność = sprzężenie
+        relPos = relPos.rotate(camRotInv);
 
-        // --- Rotacja względna ---
-        Matrix3 objRot = Matrix3.fromEuler(t.getDir().x, t.getDir().y, t.getDir().z);
-        Matrix3 relRot = camRot.transpose().multiply(objRot);
+        Quaternion objRot = transform.getRot().normalize();
+        Quaternion relRot = camRotInv.multiply(objRot);
 
-        Vec3 relDir = relRot.toEuler(); // konwersja z powrotem na eulery
-
-        // --- Zwróć nowy transform ---
-        Transform result = new Transform();
-        result.setPos(relPos);
-        result.setDir(relDir);
+        Transform result = new Transform(relPos, relRot, transform.getSize());
 
         return result;
     }
 
-
+    /** Projection from 3D to 2D */
     private Point project(double xm, double ym, double zm) {
-        // Środek ekranu
+        // camera center
         int cx = (int) Math.round((this.camera.getTransform().getSize().x * Units.M_TO_PX) / 2);
         int cy = (int) Math.round((this.camera.getTransform().getSize().y * Units.M_TO_PX) / 2);
 
-        // Punkt musi być przed kamerą
+        // not behind camera
         if (zm <= 0) return null;
 
         double k = camera.getK();
-        //System.out.println("k " + k);
 
-        // Projekcja perspektywiczna
+        // perspective projection
         double xProj = (xm * k) / zm;
         double yProj = (ym * k) / zm;
 
-        // Skalowanie i przesunięcie
+        // scaling and offsetting
         int xp = (int) Math.round(xProj * Units.M_TO_PX) + cx;
         int yp = (int) Math.round(-yProj * Units.M_TO_PX) + cy;
 
         return new Point(xp, yp);
     }
 
+    /** Rectangle */
     // uses Swing Graphics2D g2 to render a polygon without respecting Z, which causes overlapping. Use Rasterizer.drawPolygon() instead.
     public void drawPolygonSwing(Graphics2D g2, Point[] pts, BufferedImage texture, Color color) {
         if (texture != null) {
@@ -191,7 +183,7 @@ public class RenderingEngine {
         );
     }
 
-    public void drawOrientedRectangle(Graphics2D g2, Vec3 posCenter, Matrix3 rot, double width, double height, BufferedImage texture, Color color) {
+    public void drawOrientedRectangle(Vec3 posCenter, Matrix3 rot, double width, double height, BufferedImage texture, Color color) {
 //        System.out.println("drawOrientedRectangle:");
 //        System.out.println("  posCenter = " + posCenter);
 //        System.out.println("  width = " + width + ", height = " + height);
@@ -228,24 +220,22 @@ public class RenderingEngine {
     }
 
 
-    public void drawRectangle3D(Graphics2D g2, Vec3 posCenter, Vec3 dir, Vec3 size, BufferedImage texture, Color color) {
-        Matrix3 R = Matrix3.fromEuler(dir.x, dir.y, dir.z);
+    public void drawRectangle3D(Rectangle rectangle) {
+        Transform t = rectangle.getTransform();
+        Surface s = rectangle.getSurface();
 
-        drawOrientedRectangle(g2, posCenter, R, size.x, size.y, texture, color);
+        Vec3 posCenter = t.getPos().add(new Vec3(0, t.getSize().y/2, 0));
+
+        drawOrientedRectangle(posCenter, t.getRot().toMatrix3(), t.getSize().x, t.getSize().y, s.texture, s.color);
+    }
+    public void drawRectangle3DRelativeToCamera(Rectangle rectangle) {
+        Transform relativeTransform = getTransformRelativeToCamera(rectangle.getTransform());
+
+        drawRectangle3D(new Rectangle(rectangle, relativeTransform));
     }
 
 
-    public void drawRectangleRelativeToCamera(Graphics2D g2, Vec3 worldPos, Vec3 worldDir, Vec3 size, BufferedImage texture, Color color) {
-        if (camera == null) throw new IllegalStateException("Camera not set");
-
-        Transform relativeTransform = getTransformRelativeToCamera( new Transform(worldPos, worldDir, size));
-
-        drawRectangle3D(g2, relativeTransform.getPos(), relativeTransform.getDir(), relativeTransform.getSize(), texture, color);
-    }
-
-    /*
-        CUBOID
-     */
+    /** CUBOID */
     private class FaceResult {
         Vec3 position;
         Matrix3 rotation;
@@ -276,33 +266,33 @@ public class RenderingEngine {
 
         switch (type) {
             case FRONT:
-                localOffset = new Vec3(0, size.y/2, -size.z/2);
+                localOffset = new Vec3(0, size.y / 2, -size.z / 2);
                 localRot = Matrix3.rotY(Math.PI);
                 width = size.x; height = size.y;
                 break;
             case BACK:
-                localOffset = new Vec3(0, size.y/2, size.z/2);
+                localOffset = new Vec3(0, size.y / 2, size.z / 2);
                 localRot = Matrix3.identity();
                 width = size.x; height = size.y;
                 break;
             case TOP:
                 localOffset = new Vec3(0, size.y, 0);
-                localRot = Matrix3.rotX(-Math.PI/2);
+                localRot = Matrix3.rotX(-Math.PI / 2);
                 width = size.x; height = size.z;
                 break;
             case BOTTOM:
                 localOffset = new Vec3(0, 0, 0);
-                localRot = Matrix3.rotX(Math.PI/2);
+                localRot = Matrix3.rotX(Math.PI / 2);
                 width = size.x; height = size.z;
                 break;
             case RIGHT:
-                localOffset = new Vec3(size.x/2, size.y/2, 0);
-                localRot = Matrix3.rotY(Math.PI/2);
+                localOffset = new Vec3(size.x / 2, size.y / 2, 0);
+                localRot = Matrix3.rotY(Math.PI / 2);
                 width = size.z; height = size.y;
                 break;
             case LEFT:
-                localOffset = new Vec3(-size.x/2, size.y/2, 0);
-                localRot = Matrix3.rotY(-Math.PI/2);
+                localOffset = new Vec3(-size.x / 2, size.y / 2, 0);
+                localRot = Matrix3.rotY(-Math.PI / 2);
                 width = size.z; height = size.y;
                 break;
             default:
@@ -310,23 +300,19 @@ public class RenderingEngine {
         }
 
         Vec3 worldOffset = globalRot.multiply(localOffset);
-        Vec3 position = new Vec3(
-                posBottomCenter.x + worldOffset.x,
-                posBottomCenter.y + worldOffset.y,
-                posBottomCenter.z + worldOffset.z
-        );
-
+        Vec3 position = posBottomCenter.add(worldOffset);
         Matrix3 faceRot = globalRot.multiply(localRot);
 
         return new FaceResult(position, faceRot, width, height);
     }
 
-    public void drawCuboid(Graphics2D g2, Vec3 posBottomCenter, Vec3 dir, Vec3 size, List<Surface> surfaces) {
-        Matrix3 globalRot = Matrix3.fromEuler(dir.x, dir.y, dir.z);
 
-        for (Surface s : surfaces) {
-            BufferedImage tex = s.texture;
-            Color col = s.color;
+    public void drawCuboid(Cuboid cuboid) {
+        Vec3 posBottomCenter = cuboid.getTransform().getPos();
+        Vec3 size = cuboid.getTransform().getSize();
+        Matrix3 globalRot = cuboid.getTransform().getRot().toMatrix3();
+
+        for (Surface s : cuboid.getSurfaces()) {
 
             FaceResult face = computeFace(posBottomCenter, size, globalRot, s.getType());
 
@@ -335,20 +321,17 @@ public class RenderingEngine {
             //System.out.println("drawCuboid surface " + s.getType());
             //
 
-            drawOrientedRectangle(g2, face.position, face.rotation, face.width, face.height, tex, col);
+            drawOrientedRectangle(face.position, face.rotation, face.width, face.height, s.texture, s.color);
         }
     }
-
-    public void drawCuboidRelativeToCamera(Graphics2D g2, Vec3 worldPos, Vec3 worldDir, Vec3 size, List<Surface> surfaces) {
-        if (camera == null) throw new IllegalStateException("Camera not set");
-
-        Transform relativeTransform = getTransformRelativeToCamera( new Transform(worldPos, worldDir, size));
+    public void drawCuboidRelativeToCamera(Cuboid cuboid) {
+        Transform relativeTransform = getTransformRelativeToCamera(cuboid.getTransform());
 
         // DEBUG
         System.out.println("drawCuboidRelativeToCamera: relativeTransform " + relativeTransform.toString());
         //
 
-        drawCuboid(g2, relativeTransform.getPos(), relativeTransform.getDir(), relativeTransform.getSize(), surfaces);
+        drawCuboid(new Cuboid(cuboid, relativeTransform));
 
     }
 }

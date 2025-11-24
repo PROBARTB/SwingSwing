@@ -18,11 +18,11 @@ public class SceneTest3d extends ScenePanel {
         Transform staticTransform = new Transform();
         staticTransform.setPos(new Vec3(10, 0, 5));
         staticTransform.setSize(new Vec3(1, 1, 1));
-        staticTransform.setDir(new Vec3(0, 0, 0));
+        staticTransform.setRot(Quaternion.fromEuler(new Vec3(Math.toRadians(0), 0, 0)));
 
         this.staticCube = new Cuboid(staticTransform, new java.util.ArrayList<>());
 
-        Transform t = r.getObjectTransform(r.getObjectIds().get(0));
+        Transform t = r.getObjectTransform("cubeWithCamera");
 
         //attachCameraTo(staticTransform);
         attachCameraTo(t);

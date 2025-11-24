@@ -5,13 +5,14 @@ import EALiodufiowAMS2.rendering.FaceType;
 import EALiodufiowAMS2.rendering.Surface;
 import EALiodufiowAMS2.rendering.TextureManager;
 import EALiodufiowAMS2.rendering.renderingObjects.Cuboid;
+import EALiodufiowAMS2.rendering.renderingObjects.Rectangle;
 import EALiodufiowAMS2.rendering.renderingObjects.RenderingObject;
 
 import java.awt.Color;
 import java.util.*;
 
 public class RendererTest3d implements Renderer {
-    private final Map<String, Cuboid> cuboids = new HashMap<>();
+    private final Map<String, RenderingObject> objects = new HashMap<>();
 
     public RendererTest3d() {
         // wspólne tekstury dla przykładu
@@ -32,27 +33,42 @@ public class RendererTest3d implements Renderer {
         surfacesColors.add(new Surface(FaceType.RIGHT, null, Color.MAGENTA));
 
 
-        // drugi cube
         Cuboid cube2 = new Cuboid(new Transform(), surfaces);
         cube2.getTransform().setPos(new Vec3(0, 0, 0));
         cube2.getTransform().setSize(new Vec3(1, 1, 1));
-        cube2.getTransform().setDir(new Vec3(Math.toRadians(91), 0, 0));
-        cuboids.put("rotatingCube2", cube2);
+        cube2.getTransform().setRot(Quaternion.fromEuler(new Vec3(Math.toRadians(0), 0, 0)));
+        objects.put("cubeWithCamera", cube2);
 
-        // pierwszy cube
         Cuboid cube1 = new Cuboid(new Transform(), surfacesColors);
-        cube1.getTransform().setPos(new Vec3(1, 0, 0));
+        cube1.getTransform().setPos(new Vec3(1.5, 0, 0));
         cube1.getTransform().setSize(new Vec3(1, 1, 1));
-        cube1.getTransform().setDir(new Vec3(0, 0, 0));
-        cuboids.put("rotatingCube1", cube1);
+        cube1.getTransform().setRot(Quaternion.fromEuler(new Vec3(0, 0, 0)));
+        objects.put("rotatingCube1", cube1);
 
-//
-//        // trzeci cube
-//        Cuboid cube3 = new Cuboid(new Transform(), surfaces);
-//        cube3.getTransform().setPos(new Vec3(-3, -1, 4));
-//        cube3.getTransform().setSize(new Vec3(1.5, 1.5, 1.5));
-//        cube3.getTransform().setDir(new Vec3(0, 0, 0));
-//        cuboids.put("rotatingCube3", cube3);
+        Surface s1 = new Surface(FaceType.FRONT, TextureManager.getTexture("assets\\jaruzelski.jpg"), Color.PINK);
+        Rectangle rect1 = new Rectangle(new Transform(), s1);
+        rect1.getTransform().setPos(new Vec3(0, 0, 7));
+        rect1.getTransform().setSize(new Vec3(14, 2, 0));
+        rect1.getTransform().setRot(Quaternion.fromEuler(new Vec3(0, 0, 0)));
+        objects.put("bgrect1", rect1);
+
+        Rectangle rect2 = new Rectangle(new Transform(), s1);
+        rect2.getTransform().setPos(new Vec3(7, 0, 0));
+        rect2.getTransform().setSize(new Vec3(14, 2, 0));
+        rect2.getTransform().setRot(Quaternion.fromEuler(new Vec3(Math.toRadians(-90), 0, 0)));
+        objects.put("bgrect2", rect2);
+
+        Rectangle rect3 = new Rectangle(new Transform(), s1);
+        rect3.getTransform().setPos(new Vec3(0, 0, -7));
+        rect3.getTransform().setSize(new Vec3(14, 2, 0));
+        rect3.getTransform().setRot(Quaternion.fromEuler(new Vec3(Math.toRadians(180), 0, 0)));
+        objects.put("bgrect3", rect3);
+
+        Rectangle rect4 = new Rectangle(new Transform(), s1);
+        rect4.getTransform().setPos(new Vec3(-7, 0, 0));
+        rect4.getTransform().setSize(new Vec3(14, 2, 0));
+        rect4.getTransform().setRot(Quaternion.fromEuler(new Vec3(Math.toRadians(90), 0, 0)));
+        objects.put("bgrect4", rect4);
     }
 
     @Override
@@ -61,31 +77,24 @@ public class RendererTest3d implements Renderer {
         double deltaRotation = rotationSpeed * deltaTime;
 
         //for (Cuboid cube : cuboids.values()) {
-        Cuboid cube = cuboids.get("rotatingCube2");
-            Vec3 dir = cube.getTransform().getDir();
-            dir = new Vec3(dir.x + deltaRotation, dir.y, dir.z);
-
-            if (dir.y >= 360.0) {
-                dir = new Vec3(dir.x, dir.y - 360.0, dir.z);
-            }
-
-            cube.getTransform().setDir(dir);
+        RenderingObject obj = objects.get("cubeWithCamera");
+        obj.getTransform().rotateEuler(new Vec3(deltaRotation, 0, 0));
         //}
     }
 
     @Override
     public List<String> getObjectIds() {
-        return new ArrayList<>(cuboids.keySet());
+        return new ArrayList<>(objects.keySet());
     }
 
     @Override
     public RenderingObject buildRenderingObject(String id) {
-        return cuboids.get(id);
+        return objects.get(id);
     }
 
     @Override
     public Transform getObjectTransform(String id) {
-        Cuboid cube = cuboids.get(id);
-        return cube != null ? cube.getTransform() : null;
+        RenderingObject obj = objects.get(id);
+        return obj != null ? obj.getTransform() : null;
     }
 }

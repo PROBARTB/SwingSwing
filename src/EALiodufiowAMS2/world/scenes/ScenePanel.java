@@ -30,7 +30,7 @@ public class ScenePanel extends JPanel {
 
         this.renderingEngine = new RenderingEngine(resWidth, resHeight);
 
-        this.camera = new Camera(new Vec3(resWidth / Units.M_TO_PX, resHeight / Units.M_TO_PX, 0), new Vec3(0, 0, -5), new Vec3(0, 0, 0), 75);
+        this.camera = new Camera(new Vec3(resWidth / Units.M_TO_PX, resHeight / Units.M_TO_PX, 0), new Vec3(0, 1, -5), new Vec3(Math.toRadians(0), Math.toRadians(0), Math.toRadians(10)), 75);
         this.renderingEngine.setCamera(this.camera);
         setDoubleBuffered(true);
 
@@ -103,7 +103,7 @@ public class ScenePanel extends JPanel {
         BufferedImage frame = renderingEngine.getFrameBuffer();
         g.drawImage(frame, 0, 0, getWidth(), getHeight(), null);
 
-        g.setColor(Color.BLACK);
+        g.setColor(Color.GREEN);
         g.drawString("FPS: " + ((GamePanel) SwingUtilities.getWindowAncestor(this)).currentFps, 10, 20);
     }
 }
