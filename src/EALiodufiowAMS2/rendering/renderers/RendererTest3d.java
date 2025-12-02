@@ -17,12 +17,12 @@ public class RendererTest3d implements Renderer {
     public RendererTest3d() {
         // wspólne tekstury dla przykładu
         List<Surface> surfaces = new ArrayList<>();
-        surfaces.add(new Surface(FaceType.FRONT, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"), Color.RED));
-        surfaces.add(new Surface(FaceType.BACK, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"), Color.GREEN));
-        surfaces.add(new Surface(FaceType.TOP, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"), Color.BLUE));
-        surfaces.add(new Surface(FaceType.BOTTOM, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"), Color.YELLOW));
-        surfaces.add(new Surface(FaceType.LEFT, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"), Color.CYAN));
-        surfaces.add(new Surface(FaceType.RIGHT, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"), Color.MAGENTA));
+        surfaces.add(new Surface(FaceType.FRONT, TextureManager.getTexture("assets\\1.jpg"), Color.RED));
+        surfaces.add(new Surface(FaceType.BACK, TextureManager.getTexture("assets\\1.jpg"), Color.GREEN));
+        surfaces.add(new Surface(FaceType.TOP, TextureManager.getTexture("assets\\1.jpg"), Color.BLUE));
+        surfaces.add(new Surface(FaceType.BOTTOM, TextureManager.getTexture("assets\\1.jpg"), Color.YELLOW));
+        surfaces.add(new Surface(FaceType.LEFT, TextureManager.getTexture("assets\\1.jpg"), Color.CYAN));
+        surfaces.add(new Surface(FaceType.RIGHT, TextureManager.getTexture("assets\\1.jpg"), Color.MAGENTA));
 
         List<Surface> surfacesColors = new ArrayList<>();
         surfacesColors.add(new Surface(FaceType.FRONT, null, Color.RED));
@@ -39,13 +39,8 @@ public class RendererTest3d implements Renderer {
         cube2.getTransform().setRot(Quaternion.fromEuler(new Vec3(Math.toRadians(0), 0, 0)));
         objects.put("cubeWithCamera", cube2);
 
-        Cuboid cube1 = new Cuboid(new Transform(), surfacesColors);
-        cube1.getTransform().setPos(new Vec3(1.5, 0, 0));
-        cube1.getTransform().setSize(new Vec3(1, 1, 1));
-        cube1.getTransform().setRot(Quaternion.fromEuler(new Vec3(0, 0, 0)));
-        objects.put("rotatingCube1", cube1);
 
-        Surface s1 = new Surface(FaceType.FRONT, TextureManager.getTexture("assets\\jaruzelski.jpg"), Color.PINK);
+        Surface s1 = new Surface(FaceType.FRONT, TextureManager.getTexture("assets\\2.jpg"), Color.PINK);
         Rectangle rect1 = new Rectangle(new Transform(), s1);
         rect1.getTransform().setPos(new Vec3(0, 0, 7));
         rect1.getTransform().setSize(new Vec3(14, 2, 0));
