@@ -1,63 +1,71 @@
-//package EALiodufiowAMS2.rendering;
-//
-//import EALiodufiowAMS2.helpers.Vec2;
-//import EALiodufiowAMS2.tracks.TrackLayout;
-//import EALiodufiowAMS2.tracks.TrackSegment;
-//
-//import java.awt.*;
-//import java.awt.geom.Path2D;
-//import java.util.List;
-//
-///**
-// * TracksRenderer: rysuje dwie szyny (rozstaw 1.435 m) w XZ.
-// * Projekcja zgodna z RenderingEngine: X bez rotacji, Y zależne od Z względem kamery.
-// */
-//public class TracksRenderer {
-//    private static final double GAUGE_M = 1.435;
-//    private final RenderingEngine engine;
-//
-//    public TracksRenderer(RenderingEngine engine) { this.engine = engine; }
-//
-//    public TrackLayout buildLayout(List<TrackSegment> segments, Vec2 worldStart, double worldHeading) {
-//        return new TrackLayout(segments, worldStart, worldHeading);
-//    }
-//
-//    public void drawTracks(Graphics2D g2, TrackLayout layout, Dimension vp, Vec2 cameraPos) {
-//        if (layout == null) return;
-//        List<TrackLayout.Sample> samples = layout.getSamples();
-//        if (samples.isEmpty()) return;
-//
-//        Path2D leftPath = new Path2D.Double();
-//        Path2D rightPath = new Path2D.Double();
-//
-//        for (int i = 0; i < samples.size(); i++) {
-//            TrackLayout.Sample s = samples.get(i);
-//            Vec2 pos = s.worldPos;
-//            Vec2 dir = s.worldDir;
-//
-//            Vec2 leftN = new Vec2(-dir.z, dir.x).norm();
-//            Vec2 rightN = leftN.scale(-1.0);
-//
-//            Vec2 leftPos = new Vec2(pos.x + leftN.x * (GAUGE_M / 2.0),
-//                    pos.z + leftN.z * (GAUGE_M / 2.0));
-//            Vec2 rightPos = new Vec2(pos.x + rightN.x * (GAUGE_M / 2.0),
-//                    pos.z + rightN.z * (GAUGE_M / 2.0));
-//
-//            Point lp = engine.railToScreen(leftPos, vp);
-//            Point rp = engine.railToScreen(rightPos, vp);
-//
-//            if (i == 0) {
-//                leftPath.moveTo(lp.x, lp.y);
-//                rightPath.moveTo(rp.x, rp.y);
-//            } else {
-//                leftPath.lineTo(lp.x, lp.y);
-//                rightPath.lineTo(rp.x, rp.y);
-//            }
-//        }
-//
-//        g2.setColor(new Color(60, 60, 60));
-//        g2.setStroke(new BasicStroke(2.0f));
-//        g2.draw(leftPath);
-//        g2.draw(rightPath);
-//    }
-//}
+package EALiodufiowAMS2.rendering.renderers;
+
+import EALiodufiowAMS2.helpers.*;
+import EALiodufiowAMS2.rendering.renderingObjects.Line;
+import EALiodufiowAMS2.rendering.renderingObjects.RenderingObject;
+import EALiodufiowAMS2.tracks.*;
+import EALiodufiowAMS2.world.World;
+
+import java.util.*;
+
+public class TracksRenderer implements Renderer {
+
+    //https://copilot.microsoft.com/shares/HpaDbXKJfxwxXvWbcN9pz
+
+
+    private final World world;
+    private final List<RenderingObject> lines;
+
+    public TracksRenderer (World world) {
+        this.world = world;
+        this.lines = buildTrackLines(world.getLayout(), 1.0);
+    }
+
+    public List<RenderingObject> buildTrackLines(TrackLayout layout, double gauge) {
+        List<RenderingObject> lines = new ArrayList<>();
+        for (TrackEdge edge : layout.getEdges()) {
+            int samples = 20; // ile próbek na odcinek
+            for (int i = 0; i < samples; i++) {
+                double s0 = edge.segment.getLength() * i / samples;
+                double s1 = edge.segment.getLength() * (i+1) / samples;
+
+                Vec3 pos0 = edge.globalPosition(s0);
+                Vec3 pos1 = edge.globalPosition(s1);
+
+                // offset w prawo/lewo od osi toru
+                Vec3 forward = pos1.sub(pos0).normalize();
+                Vec3 up = new Vec3(0,1,0);
+                Vec3 right = forward.cross(up).normalize().scale(gauge/2.0);
+
+                // lewa szyna
+                lines.add(new Line(pos0.sub(right), pos1.sub(right)));
+                // prawa szyna
+                lines.add(new Line(pos0.add(right), pos1.add(right)));
+            }
+        }
+        return lines;
+    }
+
+
+    @Override
+    public void update(double deltaTime) {
+
+    }
+
+    @Override
+    public List<String> getObjectIds() {
+        return new ArrayList<>();
+    }
+
+    @Override
+    public RenderingObject buildRenderingObject(String id) {
+        return null;
+    }
+
+    @Override
+    public Transform getObjectTransform(String id) {
+        RenderingObject obj = null;
+        return obj != null ? obj.getTransform() : null;
+    }
+
+}

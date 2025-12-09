@@ -45,7 +45,7 @@ public class RendererTest3d implements Renderer {
         cube1.getTransform().setRot(Quaternion.fromEuler(new Vec3(0, 0, 0)));
         objects.put("rotatingCube1", cube1);
 
-        Surface s1 = new Surface(FaceType.FRONT, TextureManager.getTexture("assets\\jaruzelski.jpg"), Color.PINK);
+        Surface s1 = new Surface(FaceType.FRONT, TextureManager.getTexture("assets\\texture.png"), Color.PINK);
         Rectangle rect1 = new Rectangle(new Transform(), s1);
         rect1.getTransform().setPos(new Vec3(0, 0, 7));
         rect1.getTransform().setSize(new Vec3(14, 2, 0));

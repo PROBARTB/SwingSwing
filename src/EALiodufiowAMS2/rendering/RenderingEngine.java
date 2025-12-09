@@ -85,6 +85,10 @@ public class RenderingEngine {
                     Rectangle rectangle = (Rectangle) obj;
                     drawRectangle3DRelativeToCamera(rectangle);
                     break;
+                case "line":
+                    Line line = (Line) obj;
+                    drawLine3DRelativeToCamera(line);
+                    break;
                 default:
                     System.out.printf("Unknown object type: %s%n", obj.getType());
                     break;
@@ -334,4 +338,23 @@ public class RenderingEngine {
         drawCuboid(new Cuboid(cuboid, relativeTransform));
 
     }
+
+
+
+
+    public void drawLine3DRelativeToCamera(Line line) {
+        Transform tStart = getTransformRelativeToCamera(new Transform(line.getStart(), Quaternion.identity(), new Vec3(1,1,1)));
+        Transform tEnd   = getTransformRelativeToCamera(new Transform(line.getEnd(),   Quaternion.identity(), new Vec3(1,1,1)));
+
+        Vec3 posStart = tStart.getPos();
+        Vec3 posEnd   = tEnd.getPos();
+
+        Point p0 = project(posStart.x, posStart.y, posStart.z);
+        Point p1 = project(posEnd.x, posEnd.y, posEnd.z);
+
+        if (p0 != null && p1 != null) {
+            rasterizer.drawLine(p0, posStart.z, p1, posEnd.z, Color.GRAY);
+        }
+    }
+
 }

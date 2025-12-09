@@ -157,4 +157,39 @@ public class Rasterizer {
     private static int clamp(int v, int lo, int hi) {
         return Math.max(lo, Math.min(hi, v));
     }
+
+
+
+
+
+
+    /** LINES */
+    public void drawLine(Point p0, double z0, Point p1, double z1, Color color) {
+        if (p0 == null || p1 == null) return;
+
+        int x0 = p0.x, y0 = p0.y;
+        int x1 = p1.x, y1 = p1.y;
+
+        int dx = Math.abs(x1 - x0);
+        int dy = Math.abs(y1 - y0);
+        int sx = x0 < x1 ? 1 : -1;
+        int sy = y0 < y1 ? 1 : -1;
+        int err = dx - dy;
+
+        int[] fb = ((java.awt.image.DataBufferInt) frameBuffer.getRaster().getDataBuffer()).getData();
+
+        while (true) {
+            int idx = y0 * bufferWidth + x0;
+            double z = (dx+dy==0) ? (z0+z1)/2.0 : (z0 + z1)/2.0; // prosta interpolacja
+            if (z < zBuffer[idx]) {
+                fb[idx] = color.getRGB();
+                zBuffer[idx] = z;
+            }
+            if (x0 == x1 && y0 == y1) break;
+            int e2 = 2 * err;
+            if (e2 > -dy) { err -= dy; x0 += sx; }
+            if (e2 < dx) { err += dx; y0 += sy; }
+        }
+    }
+
 }
