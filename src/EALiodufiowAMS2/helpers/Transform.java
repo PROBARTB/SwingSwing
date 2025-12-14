@@ -49,10 +49,11 @@ public class Transform {
     @Override
     public String toString() {
         return "Transform{" +
-                "pos=" + pos +
-                ", rotEuler=" + getRotationEuler() +
-                ", size=" + size +
+                "pos=" + (pos != null ? pos : "null") +
+                ", rotEuler=" + (rot != null ? rot.toEuler() : "null") +
+                ", size=" + (size != null ? size : "null") +
                 '}';
     }
+
 }
 

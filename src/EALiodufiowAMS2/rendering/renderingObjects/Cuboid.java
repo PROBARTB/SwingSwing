@@ -26,7 +26,7 @@ public class Cuboid implements RenderingObject {
 
     @Override
     public String getType() {
-        return "cuboid";
+        return "Cuboid";
     }
 
     public Surface getSurface(FaceType type) {

@@ -77,17 +77,21 @@ public class RenderingEngine {
             //
 
             switch (obj.getType()) {
-                case "cuboid":
+                case "Cuboid":
                     Cuboid cuboid = (Cuboid) obj;
                     drawCuboidRelativeToCamera(cuboid);
                     break;
-                case "rectangle":
+                case "Rectangle":
                     Rectangle rectangle = (Rectangle) obj;
                     drawRectangle3DRelativeToCamera(rectangle);
                     break;
-                case "line":
-                    Line line = (Line) obj;
-                    drawLine3DRelativeToCamera(line);
+                case "StraightLine":
+                    StraightLine straightLine = (StraightLine) obj;
+                    drawStraightLine3DRelativeToCamera(straightLine);
+                    break;
+                case "CurvedLine":
+                    CurvedLine curvedLine = (CurvedLine) obj;
+                    drawCurvedLine3DRelativeToCamera(curvedLine);
                     break;
                 default:
                     System.out.printf("Unknown object type: %s%n", obj.getType());
@@ -121,6 +125,21 @@ public class RenderingEngine {
 
         return result;
     }
+    public Vec3 getPosRelativeToCamera(Vec3 worldPos) {
+        if (camera == null) throw new IllegalStateException("Camera not set");
+
+        Transform camt = camera.getTransform();
+
+        // Pozycja względem kamery
+        Vec3 relPos = worldPos.sub(camt.getPos());
+
+        // Zastosuj odwrotną rotację kamery
+        Quaternion camRotInv = camt.getRot().normalize().conjugate();
+        relPos = relPos.rotate(camRotInv);
+
+        return relPos;
+    }
+
 
     /** Projection from 3D to 2D */
     private Point project(double xm, double ym, double zm) {
@@ -340,21 +359,149 @@ public class RenderingEngine {
     }
 
 
+    /** LINES */
+
+    // Funkcja pomocnicza: kierunek uchwytu z rotacji
+    private Vec3 computeHandleDirection(Quaternion rot) {
+        // lokalna oś X jako kierunek uchwytu
+        return new Vec3(1,0,0).rotate(rot).normalize();
+    }
+
+    // Funkcja pomocnicza: liczenie punktów kontrolnych Béziera
+    private Vec3[] computeControlPoints(CurvedLine line) {
+        Vec3 p0 = line.getStartPosition();
+        Vec3 p3 = line.getEndPosition();
+
+        Vec3 dirStart = computeHandleDirection(line.getStartRotation());
+        Vec3 dirEnd   = computeHandleDirection(line.getEndRotation());
+
+        // p1 wychodzi od p0 wzdłuż dirStart
+        Vec3 p1 = p0.add(dirStart.scale(line.getStartHandleLength() * line.getCurvatureFactor()));
+
+        // p2 wchodzi do p3 wzdłuż dirEnd (odejmujemy, żeby kierunek był zgodny)
+        Vec3 p2 = p3.sub(dirEnd.scale(line.getEndHandleLength() * line.getCurvatureFactor()));
+
+        return new Vec3[]{p0, p1, p2, p3};
+    }
+
+    // Prosta linia
+    public void drawStraightLine3DRelativeToCamera(StraightLine line) {
+        // transformacja do kamery
+        Vec3 startCam = getPosRelativeToCamera(line.getStartPos());
+        Vec3 endCam   = getPosRelativeToCamera(line.getEndPos());
+
+        // projekcja na ekran
+        Point startScreen = project(startCam.x, startCam.y, startCam.z);
+        Point endScreen   = project(endCam.x, endCam.y, endCam.z);
+
+        rasterizer.drawStraightLine(startScreen, startCam.z,
+                endScreen, endCam.z,
+                line.getColor());
+    }
+
+    private final int CURVE_DETAIL = 32;
+
+//    public void drawCurvedLine3DRelativeToCamera(CurvedLine line) {
+//        Vec3[] ctrl = computeControlPoints(line);
+//
+//        Vec3 p0Cam = getPosRelativeToCamera(ctrl[0]);
+//        Vec3 p1Cam = getPosRelativeToCamera(ctrl[1]);
+//        Vec3 p2Cam = getPosRelativeToCamera(ctrl[2]);
+//        Vec3 p3Cam = getPosRelativeToCamera(ctrl[3]);
+//
+//        Point p0Screen = project(p0Cam.x, p0Cam.y, p0Cam.z);
+//        Point p1Screen = project(p1Cam.x, p1Cam.y, p1Cam.z);
+//        Point p2Screen = project(p2Cam.x, p2Cam.y, p2Cam.z);
+//        Point p3Screen = project(p3Cam.x, p3Cam.y, p3Cam.z);
+//
+//        rasterizer.drawBezierCurve(p0Screen, p0Cam.z, p1Screen, p1Cam.z, p2Screen, p2Cam.z, p3Screen, p3Cam.z, line.getColor(), CURVE_DETAIL);
+//    }
+public void drawCurvedLine3DRelativeToCamera(CurvedLine line) {
+    Vec3[] ctrlWorld = computeControlPoints(line);
+
+    // do układu kamery
+    Vec3 p0Cam = getPosRelativeToCamera(ctrlWorld[0]);
+    Vec3 p1Cam = getPosRelativeToCamera(ctrlWorld[1]);
+    Vec3 p2Cam = getPosRelativeToCamera(ctrlWorld[2]);
+    Vec3 p3Cam = getPosRelativeToCamera(ctrlWorld[3]);
+
+    // rysuj forward differencing z projektowaniem próbek
+    drawBezierCurveFD(p0Cam, p1Cam, p2Cam, p3Cam, line.getColor(), CURVE_DETAIL);
+}
 
 
-    public void drawLine3DRelativeToCamera(Line line) {
-        Transform tStart = getTransformRelativeToCamera(new Transform(line.getStart(), Quaternion.identity(), new Vec3(1,1,1)));
-        Transform tEnd   = getTransformRelativeToCamera(new Transform(line.getEnd(),   Quaternion.identity(), new Vec3(1,1,1)));
 
-        Vec3 posStart = tStart.getPos();
-        Vec3 posEnd   = tEnd.getPos();
+    // Rysowanie krzywej Béziera przez forward differencing,
+// na wejściu kontrolne punkty w PRZESTRZENI KAMERY (x,y,z).
+    public void drawBezierCurveFD(Vec3 p0Cam, Vec3 p1Cam, Vec3 p2Cam, Vec3 p3Cam,
+                                  Color color, int steps) {
+        if (steps < 2) steps = 2;
 
-        Point p0 = project(posStart.x, posStart.y, posStart.z);
-        Point p1 = project(posEnd.x, posEnd.y, posEnd.z);
+        // współczynniki wielomianu (osie liczymy niezależnie)
+        double ax = -p0Cam.x + 3*p1Cam.x - 3*p2Cam.x + p3Cam.x;
+        double bx =  3*p0Cam.x - 6*p1Cam.x + 3*p2Cam.x;
+        double cx = -3*p0Cam.x + 3*p1Cam.x;
+        double dx =  p0Cam.x;
 
-        if (p0 != null && p1 != null) {
-            rasterizer.drawLine(p0, posStart.z, p1, posEnd.z, Color.GRAY);
+        double ay = -p0Cam.y + 3*p1Cam.y - 3*p2Cam.y + p3Cam.y;
+        double by =  3*p0Cam.y - 6*p1Cam.y + 3*p2Cam.y;
+        double cy = -3*p0Cam.y + 3*p1Cam.y;
+        double dy =  p0Cam.y;
+
+        double az = -p0Cam.z + 3*p1Cam.z - 3*p2Cam.z + p3Cam.z;
+        double bz =  3*p0Cam.z - 6*p1Cam.z + 3*p2Cam.z;
+        double cz = -3*p0Cam.z + 3*p1Cam.z;
+        double dz =  p0Cam.z;
+
+        double h  = 1.0 / steps;
+        double h2 = h * h;
+        double h3 = h2 * h;
+
+        // wartości początkowe
+        double x = dx, y = dy, z = dz;
+
+        // różnice (delta1, delta2, delta3)
+        double dx1 = ax*h3 + bx*h2 + cx*h;
+        double dy1 = ay*h3 + by*h2 + cy*h;
+        double dz1 = az*h3 + bz*h2 + cz*h;
+
+        double dx2 = 6*ax*h3 + 2*bx*h2;
+        double dy2 = 6*ay*h3 + 2*by*h2;
+        double dz2 = 6*az*h3 + 2*bz*h2;
+
+        double dx3 = 6*ax*h3;
+        double dy3 = 6*ay*h3;
+        double dz3 = 6*az*h3;
+
+        // poprzedni widoczny punkt (ekran) i jego z w kamerze
+        Point prevScreen = null;
+        double prevZCam = 0.0;
+
+        for (int i = 0; i <= steps; i++) {
+            // projektuj próbkę (zgodnie z near-plane: projekt() zwróci null gdy z<=0)
+            Point screen = project(x, y, z);
+
+            if (screen != null) {
+                if (prevScreen != null) {
+                    // narysuj odcinek między poprzednią a bieżącą próbką
+                    // interpolując Z po przestrzeni kamery (liniowo względem parametru kroku)
+                    rasterizer.drawStraightLine(prevScreen, prevZCam, screen, z, color);
+                }
+                prevScreen = screen;
+                prevZCam   = z;
+            } else {
+                // bieżąca próbka niewidoczna → przerwij ciągłość
+                prevScreen = null;
+            }
+
+            // aktualizacja różnic
+            x += dx1; dx1 += dx2; dx2 += dx3;
+            y += dy1; dy1 += dy2; dy2 += dy3;
+            z += dz1; dz1 += dz2; dz2 += dz3;
         }
     }
+
+
+
 
 }

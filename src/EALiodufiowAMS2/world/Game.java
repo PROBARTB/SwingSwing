@@ -5,12 +5,18 @@ package EALiodufiowAMS2.world;
 import EALiodufiowAMS2.world.scenes.ScenePanel;
 import EALiodufiowAMS2.world.scenes.SceneTest3d;
 
+import java.awt.*;
+
 public class Game {
     public static void main(String[] args) {
         javax.swing.SwingUtilities.invokeLater(() -> {
 
-            int resWidth = 2560;
-            int resHeight = 1440;
+            Toolkit toolkit = Toolkit.getDefaultToolkit();
+            Dimension screenSize = toolkit.getScreenSize();
+            int resWidth = screenSize.width;
+            int resHeight = screenSize.height;
+//            int resWidth = 2560;
+//            int resHeight = 1440;
 
             World world = new World();
             //world.addTrackSegment(new StraightSegment("0001", 50)); // id + length

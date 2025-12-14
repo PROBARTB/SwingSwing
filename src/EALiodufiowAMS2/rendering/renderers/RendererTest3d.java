@@ -4,9 +4,7 @@ import EALiodufiowAMS2.helpers.*;
 import EALiodufiowAMS2.rendering.FaceType;
 import EALiodufiowAMS2.rendering.Surface;
 import EALiodufiowAMS2.rendering.TextureManager;
-import EALiodufiowAMS2.rendering.renderingObjects.Cuboid;
-import EALiodufiowAMS2.rendering.renderingObjects.Rectangle;
-import EALiodufiowAMS2.rendering.renderingObjects.RenderingObject;
+import EALiodufiowAMS2.rendering.renderingObjects.*;
 
 import java.awt.Color;
 import java.util.*;
@@ -69,6 +67,15 @@ public class RendererTest3d implements Renderer {
         rect4.getTransform().setSize(new Vec3(14, 2, 0));
         rect4.getTransform().setRot(Quaternion.fromEuler(new Vec3(Math.toRadians(90), 0, 0)));
         objects.put("bgrect4", rect4);
+
+        StraightLine lineS1 = new StraightLine(new Vec3(-3, 0, -2), new Vec3(-1, 0, 0), Color.CYAN);
+        objects.put("lineS1", lineS1);
+
+        CurvedLine lineC1 = new CurvedLine(
+                new Transform(new Vec3(-1, 0, 0), Quaternion.fromEuler(new Vec3(Math.toRadians(315), 0, 0)), new Vec3(2, 0, 0)),
+                new Transform(new Vec3(1, 0, 2), Quaternion.fromEuler(new Vec3(0, 0, 0)), new Vec3(2, 0, 0)),
+                0.75, Color.YELLOW);
+        objects.put("lineC1", lineC1);
     }
 
     @Override

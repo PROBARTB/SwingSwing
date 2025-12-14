@@ -26,7 +26,7 @@ public class Rectangle implements RenderingObject {
 
     @Override
     public String getType() {
-        return "rectangle";
+        return "Rectangle";
     }
 
     public Surface getSurface() {
