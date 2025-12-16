@@ -18,7 +18,7 @@ public class World { ;
 //    public List<RailVehicle> getVehicles() { return Collections.unmodifiableList(vehicles); }
 
 
-    private final TrackLayout layout;
+    private final TrackNetwork layout;
 
     public World() {
         List<TrackSegment> segments = new ArrayList<>();
@@ -40,8 +40,8 @@ public class World { ;
         segments.add(new StraightSegment("straight4", 120));
 
         Transform startPose = new Transform(new Vec3(0,0,0), Quaternion.fromEuler(new Vec3(Math.toRadians(0), 0, 0)), new Vec3(1,0,1));
-        this.layout = new TrackLayout(segments, startPose);
+        this.layout = new TrackNetwork(segments, startPose);
     }
 
-    public TrackLayout getLayout() { return layout; }
+    public TrackNetwork getLayout() { return layout; }
 }

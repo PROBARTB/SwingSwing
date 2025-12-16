@@ -69,3 +69,136 @@
 //    }
 //
 //}
+
+import java.util.*;
+
+public class TracksRenderer implements Renderer {
+    private final TrackNetwork network;
+    private final double HALF_GAUGE = 1.435 / 2.0; // Standardowy rozstaw szyn / 2
+
+    // Cache mapujący ID wizualne -> Definicja obiektu
+    // Używamy tego, by getObjectTransform i buildRenderingObject działały szybko
+    private final Map<String, RenderJob> renderJobs = new HashMap<>();
+    private final List<String> objectIds = new ArrayList<>();
+
+    // Klasa pomocnicza trzymająca dane potrzebne do stworzenia obiektu
+    private static class RenderJob {
+        String originalSegmentId;
+        boolean isLeftRail; // true = lewa szyna, false = prawa
+        boolean isCurved;   // typ segmentu
+        // Parametry dla buildera:
+        Transform startT, endT;
+        double curvature; // Tylko dla curved
+        Color color;
+
+        public RenderJob(String segId, boolean left, boolean curved, Transform s, Transform e, double c, Color col) {
+            this.originalSegmentId = segId;
+            this.isLeftRail = left;
+            this.isCurved = curved;
+            this.startT = s;
+            this.endT = e;
+            this.curvature = c;
+            this.color = col;
+        }
+    }
+
+    public TracksRenderer(TrackNetwork network) {
+        this.network = network;
+        rebuildRenderList();
+    }
+
+    // Wywoływane raz lub gdy zmieni się układ torów (np. edytor)
+    // SwitchToggle nie wymaga przebudowy listy, tylko update() dla animacji
+    public void rebuildRenderList() {
+        renderJobs.clear();
+        objectIds.clear();
+
+        for (TrackSegment seg : network.getAllSegments()) {
+            // Pobieramy globalną pozycję startu segmentu z Networku
+            Transform globalStart = network.getVehicleTransform(seg.getId(), 0);
+
+            // Tworzymy dwie szyny dla każdego segmentu
+            createRailJob(seg, globalStart, true);  // Lewa
+            createRailJob(seg, globalStart, false); // Prawa
+
+            // Tutaj można dodać podkłady (Sleepers) jako osobne obiekty StraightLine
+        }
+    }
+
+    private void createRailJob(TrackSegment seg, Transform globalSegStart, boolean isLeft) {
+        String visualId = seg.getId() + (isLeft ? "_L" : "_R");
+        double offset = isLeft ? -HALF_GAUGE : HALF_GAUGE;
+
+        // 1. Obliczamy Globalny Start Szyny
+        // Przesuwamy punkt startowy w bok względem jego rotacji
+        Vec3 offsetVec = globalSegStart.rotation.right().multiply(offset); // right() musi zwracać wektor "w prawo" z kwaternionu
+        Transform railStart = new Transform(
+                globalSegStart.position.add(offsetVec),
+                globalSegStart.rotation // Rotacja ta sama co środek toru
+        );
+
+        // 2. Obliczamy Globalny Koniec Szyny
+        // Musimy pobrać lokalny koniec segmentu i dodać go do globalnego startu
+        Transform localEnd = seg.getLocalTransform(seg.getLength());
+        Transform globalSegEnd = globalSegStart.combine(localEnd);
+
+        Vec3 endOffsetVec = globalSegEnd.rotation.right().multiply(offset);
+        Transform railEnd = new Transform(
+                globalSegEnd.position.add(endOffsetVec),
+                globalSegEnd.rotation
+        );
+
+        // 3. Rejestrujemy zadanie
+        if (seg instanceof CurvedSegment) {
+            // Tu jest trick z CurvatureFactor.
+            // Dla łuków równoległych promień się zmienia (R_wew = R - offset, R_zew = R + offset).
+            // Jeśli CurvatureFactor to np. 1/R, trzeba to skorygować.
+            // Zakładam jednak, że engine używa Transformów (stycznych), więc factor może zostać zbliżony.
+            double originalCurvature = 1.0; // Wartość domyślna lub pobrana z seg
+
+            renderJobs.put(visualId, new RenderJob(
+                    seg.getId(), isLeft, true, railStart, railEnd, originalCurvature, Color.GRAY
+            ));
+        } else {
+            renderJobs.put(visualId, new RenderJob(
+                    seg.getId(), isLeft, false, railStart, railEnd, 0, Color.GRAY
+            ));
+        }
+        objectIds.add(visualId);
+    }
+
+    @Override
+    public void update(double deltaTime) {
+        // Tu obsługujemy animację zwrotnic.
+        // Sprawdzamy stan SwitchSegmentów i ewentualnie podmieniamy geometrię
+        // dla "iglic" (ruchomych części toru).
+        // W najprostszej wersji statycznej - puste.
+    }
+
+    @Override
+    public List<String> getObjectIds() {
+        return objectIds;
+    }
+
+    @Override
+    public Transform getObjectTransform(String id) {
+        // Zwracamy pozycję startową danego kawałka szyny
+        RenderJob job = renderJobs.get(id);
+        if (job != null) return job.startT;
+        return new Transform(new Vec3(0,0,0), Quaternion.identity());
+    }
+
+    @Override
+    public RenderingObject buildRenderingObject(String id) {
+        RenderJob job = renderJobs.get(id);
+        if (job == null) return null;
+
+        if (job.isCurved) {
+            // Tworzymy CurvedLine używając Transformów (które zawierają rotację/styczną)
+            // Dzięki temu renderer wie, w którą stronę wygiąć linię
+            return new CurvedLine(job.startT, job.endT, job.curvature, job.color);
+        } else {
+            return new StraightLine(job.startT.position, job.endT.position, job.color);
+        }
+    }
+}

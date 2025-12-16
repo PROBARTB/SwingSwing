@@ -2,44 +2,39 @@ package EALiodufiowAMS2.tracks;
 
 import EALiodufiowAMS2.helpers.*;
 
-public class SwitchSegment implements TrackSegment {
-    public enum Path { MAIN, BRANCH }
+public class SwitchSegment extends TrackSegment {
+    private TrackSegment straightPath;
+    private TrackSegment curvedPath;
+    private boolean isSwitched = false; // false = straight, true = curved
 
-    private final String id;
-    private final StraightSegment main;
-    private final CurvedSegment branch;
-    private Path currentPath = Path.MAIN;
-
-    public SwitchSegment(String id, StraightSegment main, CurvedSegment branch) {
-        this.id = id;
-        this.main = main;
-        this.branch = branch;
+    public SwitchSegment(String id, StraightSegment sPath, CurvedSegment cPath) {
+        super(id);
+        this.straightPath = sPath;
+        this.curvedPath = cPath;
+        // Długość domyślnie z głównego toru
+        this.length = sPath.getLength();
     }
 
-    public void setPath(Path path) { this.currentPath = path; }
-    public Path getPath() { return currentPath; }
-
-    @Override public String getId() { return id; }
-
-    @Override public double getLength() {
-        return currentPath == Path.MAIN ? main.getLength() : branch.getLength();
+    public void toggle() {
+        isSwitched = !isSwitched;
+        // Aktualizacja długości i EndNode
+        this.length = isSwitched ? curvedPath.getLength() : straightPath.getLength();
     }
 
     @Override
-    public Vec3 localPosition(double s) {
-        return currentPath == Path.MAIN ? main.localPosition(s) : branch.localPosition(s);
+    public TrackNode getEndNode() {
+        // Zwracamy węzeł końca aktywnej ścieżki
+        return isSwitched ? curvedPath.getEndNode() : straightPath.getEndNode();
     }
 
     @Override
-    public Quaternion localRotation(double s) {
-        return currentPath == Path.MAIN ? main.localRotation(s) : branch.localRotation(s);
+    public Transform getLocalTransform(double distance) {
+        // Delegacja do aktywnego segmentu wewnętrznego
+        return isSwitched ? curvedPath.getLocalTransform(distance)
+                : straightPath.getLocalTransform(distance);
     }
 
-    @Override
-    public TrackEndpoint getStart() { return new TrackEndpoint(new Vec3(0,0,0), localRotation(0)); }
-
-    @Override
-    public TrackEndpoint getEnd() {
-        return currentPath == Path.MAIN ? main.getEnd() : branch.getEnd();
-    }
+    // Metody pomocnicze dla Renderera (żeby rysował oba tory)
+    public TrackSegment getStraightPart() { return straightPath; }
+    public TrackSegment getCurvedPart() { return curvedPath; }
 }

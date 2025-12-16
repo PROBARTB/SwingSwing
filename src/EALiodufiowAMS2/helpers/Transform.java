@@ -13,6 +13,7 @@ public class Transform {
     public Transform(Vec3 size) {
         this(new Vec3(0,0,0), Quaternion.identity(), size);
     }
+    public Transform(Vec3 pos, Quaternion rot) { this(pos, rot, null); }
     public Transform(Vec3 pos, Quaternion rot, Vec3 size) {
         this.pos = pos;
         this.rot = rot;
