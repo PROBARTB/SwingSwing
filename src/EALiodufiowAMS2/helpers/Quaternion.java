@@ -105,6 +105,12 @@ public class Quaternion {
         return new Quaternion(w,x,y,z).normalize();
     }
 
+    public Vec3 right() { return new Vec3(1,0,0).rotate(this); }
+    public Vec3 forward() { return new Vec3(0,0,1).rotate(this); }
+    public Vec3 up() { return new Vec3(0,1,0).rotate(this); }
+
+
+
     @Override
     public String toString() {
         return String.format("Quaternion{w=%.3f, x=%.3f, y=%.3f, z=%.3f}", w, x, y, z);

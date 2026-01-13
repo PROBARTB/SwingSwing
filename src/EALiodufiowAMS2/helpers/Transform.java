@@ -47,6 +47,18 @@ public class Transform {
         this.rot = this.rot.multiply(delta);
     }
 
+    public Transform combine(Transform child) {
+        Vec3 newPos = this.pos.add(child.pos.rotate(this.rot));
+        Quaternion newRot = this.rot.multiply(child.rot);
+        Vec3 newSize = new Vec3(
+                this.size.x * child.size.x,
+                this.size.y * child.size.y,
+                this.size.z * child.size.z
+        );
+        return new Transform(newPos, newRot, newSize);
+    }
+
+
     @Override
     public String toString() {
         return "Transform{" +
