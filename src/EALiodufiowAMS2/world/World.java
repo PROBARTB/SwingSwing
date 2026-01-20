@@ -18,30 +18,30 @@ public class World { ;
 //    public List<RailVehicle> getVehicles() { return Collections.unmodifiableList(vehicles); }
 
 
-    private final TrackNetwork layout;
+    //private final TrackNetwork layout;
 
     public World() {
-        List<TrackSegment> segments = new ArrayList<>();
-        segments.add(new StraightSegment("straight1", 100));
-        segments.add(new CurvedSegment("curve1", 50, Math.PI * 25));
-        segments.add(new StraightSegment("straight2", 80));
-        segments.add(new CurvedSegment("curve2", 40, 60, Math.toRadians(45)));
-
-        StraightSegment main1 = new StraightSegment("switchMain1", 70);
-        CurvedSegment branch1 = new CurvedSegment("switchBranch1", 30, Math.PI * 15);
-        segments.add(new SwitchSegment("switch1", main1, branch1));
-
-        segments.add(new StraightSegment("straight3", 60));
-
-        StraightSegment main2 = new StraightSegment("switchMain2", 90);
-        CurvedSegment branch2 = new CurvedSegment("switchBranch2", 25, 40, Math.toRadians(-30));
-        segments.add(new SwitchSegment("switch2", main2, branch2));
-
-        segments.add(new StraightSegment("straight4", 120));
-
-        Transform startPose = new Transform(new Vec3(0,0,0), Quaternion.fromEuler(new Vec3(Math.toRadians(0), 0, 0)), new Vec3(1,0,1));
-        this.layout = new TrackNetwork(segments, startPose);
+//        List<TrackSegment> segments = new ArrayList<>();
+//        segments.add(new StraightSegment("straight1", 100));
+//        segments.add(new CurvedSegment("curve1", 50, Math.PI * 25));
+//        segments.add(new StraightSegment("straight2", 80));
+//        segments.add(new CurvedSegment("curve2", 40, 60, Math.toRadians(45)));
+//
+//        StraightSegment main1 = new StraightSegment("switchMain1", 70);
+//        CurvedSegment branch1 = new CurvedSegment("switchBranch1", 30, Math.PI * 15);
+//        segments.add(new SwitchSegment("switch1", main1, branch1));
+//
+//        segments.add(new StraightSegment("straight3", 60));
+//
+//        StraightSegment main2 = new StraightSegment("switchMain2", 90);
+//        CurvedSegment branch2 = new CurvedSegment("switchBranch2", 25, 40, Math.toRadians(-30));
+//        segments.add(new SwitchSegment("switch2", main2, branch2));
+//
+//        segments.add(new StraightSegment("straight4", 120));
+//
+//        Transform startPose = new Transform(new Vec3(0,0,0), Quaternion.fromEuler(new Vec3(Math.toRadians(0), 0, 0)), new Vec3(1,0,1));
+//        this.layout = new TrackNetwork(segments, startPose);
     }
 
-    public TrackNetwork getLayout() { return layout; }
+    //public TrackNetwork getLayout() { return layout; }
 }

@@ -3,14 +3,15 @@ package EALiodufiowAMS2.world.scenes;
 import EALiodufiowAMS2.helpers.Quaternion;
 import EALiodufiowAMS2.helpers.Transform;
 import EALiodufiowAMS2.helpers.Vec3;
-import EALiodufiowAMS2.rendering.renderingObjects.Cuboid;
+import EALiodufiowAMS2.rendering.renderingObject.Material;
 import EALiodufiowAMS2.world.World;
-import EALiodufiowAMS2.rendering.renderers.*;
+
+import java.awt.*;
 
 public class Scene1 extends ScenePanel {
 
     public Scene1(World world, int resWidth, int resHeight) {
-        super(world, resWidth, resHeight);
+        super(world, new Scene(new Material(Color.darkGray)), resWidth, resHeight);
 
         //addRenderer(new TracksRenderer(world));
         //addRenderer(new VehiclesRenderer(world));

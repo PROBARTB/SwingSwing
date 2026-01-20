@@ -1,26 +1,26 @@
 package EALiodufiowAMS2.world.scenes;
 
 import EALiodufiowAMS2.helpers.*;
-import EALiodufiowAMS2.rendering.renderers.Renderer;
-import EALiodufiowAMS2.rendering.renderers.RendererTest3d;
-import EALiodufiowAMS2.rendering.renderingObjects.Cuboid;
+import EALiodufiowAMS2.rendering.builders.Builder;
+import EALiodufiowAMS2.rendering.builders.BuilderTest3D;
+import EALiodufiowAMS2.rendering.renderingObject.Material;
 import EALiodufiowAMS2.world.World;
 
+import java.awt.*;
+
 public class SceneTest3d extends ScenePanel {
-    private final Cuboid staticCube;
 
     public SceneTest3d(World world, int resWidth, int resHeight) {
-        super(world, resWidth, resHeight);
+        super(world, new Scene(new Material(new Color(0xff5c6e7d, true))), resWidth, resHeight);
 
-        Renderer r = new RendererTest3d();
+        Builder r = new BuilderTest3D();
         addRenderer(r);
 
         Transform staticTransform = new Transform();
-        staticTransform.setPos(new Vec3(10, 0, 5));
+        staticTransform.setPos(new Vec3(0, 0, -5));
         staticTransform.setSize(new Vec3(1, 1, 1));
         staticTransform.setRot(Quaternion.fromEuler(new Vec3(Math.toRadians(0), 0, 0)));
 
-        this.staticCube = new Cuboid(staticTransform, new java.util.ArrayList<>());
 
         Transform t = r.getObjectTransform("cubeWithCamera");
 

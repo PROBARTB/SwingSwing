@@ -58,6 +58,13 @@ public class Transform {
         return new Transform(newPos, newRot, newSize);
     }
 
+    public Matrix4 toModelMatrix() {
+        Matrix4 S = Matrix4.scale(size);
+        Matrix4 R = Matrix4.rotate(rot);
+        Matrix4 T = Matrix4.translation(pos);
+        return T.multiply(R).multiply(S);
+    }
+
 
     @Override
     public String toString() {
@@ -69,4 +76,3 @@ public class Transform {
     }
 
 }
-

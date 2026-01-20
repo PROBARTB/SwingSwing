@@ -4,8 +4,9 @@ import EALiodufiowAMS2.helpers.Transform;
 import EALiodufiowAMS2.helpers.Units;
 import EALiodufiowAMS2.helpers.Vec3;
 import EALiodufiowAMS2.rendering.RenderingEngine;
-import EALiodufiowAMS2.rendering.renderingObjects.RenderingObject;
-import EALiodufiowAMS2.rendering.renderers.Renderer;
+import EALiodufiowAMS2.rendering.graphicsRenderers.CpuBackend;
+import EALiodufiowAMS2.rendering.renderingObject.RenderingObject;
+import EALiodufiowAMS2.rendering.builders.Builder;
 import EALiodufiowAMS2.world.Camera;
 import EALiodufiowAMS2.world.GamePanel;
 import EALiodufiowAMS2.world.World;
@@ -19,19 +20,24 @@ import java.util.List;
 
 public class ScenePanel extends JPanel {
     private final World world;
-    private final List<Renderer> renderers = new ArrayList<>();
+    private final List<Builder> builders = new ArrayList<>();
     private final RenderingEngine renderingEngine;
     protected final Camera camera;
 
-    private List<RenderingObject> currentFrameObjects = new ArrayList<>();
+    private Scene scene;
 
-    public ScenePanel(World world, int resWidth, int resHeight) {
+    public ScenePanel(World world, Scene scene, int resWidth, int resHeight) {
         this.world = world;
+        this.scene = scene;
 
         this.renderingEngine = new RenderingEngine(resWidth, resHeight);
+        this.renderingEngine.setScene(this.scene);
 
-        this.camera = new Camera(new Vec3(resWidth / Units.M_TO_PX, resHeight / Units.M_TO_PX, 0), new Vec3(0, 1, -5), new Vec3(Math.toRadians(0), Math.toRadians(0), Math.toRadians(10)), 75);
+        this.camera = new Camera(new Vec3(resWidth / Units.M_TO_PX, resHeight / Units.M_TO_PX, 0), new Vec3(0, 0, -5), new Vec3(Math.toRadians(0), Math.toRadians(0), Math.toRadians(0)), 75);
+        //this.camera = new Camera(new Vec3(resWidth / Units.M_TO_PX, resHeight / Units.M_TO_PX, 0), new Vec3(0, 0, 0), new Vec3(Math.toRadians(0), Math.toRadians(0), Math.toRadians(0)), 75);
+
         this.renderingEngine.setCamera(this.camera);
+
         setDoubleBuffered(true);
 
         setBorder(BorderFactory.createLineBorder(Color.RED, 3));
@@ -50,7 +56,7 @@ public class ScenePanel extends JPanel {
 
     }
 
-    public void addRenderer(Renderer r) { renderers.add(r); }
+    public void addRenderer(Builder r) { builders.add(r); }
 
     public void attachCameraTo(Transform attachedTransform) {
         camera.attachTo(attachedTransform);
@@ -65,14 +71,14 @@ public class ScenePanel extends JPanel {
 
     public void stepAndRender(double deltaTime) {
 
-        for (Renderer r : renderers) {
+        for (Builder r : builders) {
             r.update(deltaTime);
         }
 
         camera.update();
 
         List<RenderingObject> objects = new ArrayList<>();
-        for (Renderer r : renderers) {
+        for (Builder r : builders) {
             for (String id : r.getObjectIds()) {
                 boolean visible;
                 try {
@@ -90,15 +96,14 @@ public class ScenePanel extends JPanel {
             }
         }
 
-        currentFrameObjects = objects;
-        renderingEngine.setObjects(objects);
+        scene.setObjects(objects);
         repaint();
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        renderingEngine.update((Graphics2D) g);
+        renderingEngine.renderFrame((Graphics2D) g);
 
         BufferedImage frame = renderingEngine.getFrameBuffer();
         g.drawImage(frame, 0, 0, getWidth(), getHeight(), null);

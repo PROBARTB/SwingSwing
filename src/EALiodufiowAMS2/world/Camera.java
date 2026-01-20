@@ -1,9 +1,6 @@
 package EALiodufiowAMS2.world;
 
-import EALiodufiowAMS2.helpers.Matrix3;
-import EALiodufiowAMS2.helpers.Quaternion;
-import EALiodufiowAMS2.helpers.Transform;
-import EALiodufiowAMS2.helpers.Vec3;
+import EALiodufiowAMS2.helpers.*;
 
 public class Camera {
     private Transform attachedTransform;
@@ -12,6 +9,15 @@ public class Camera {
     private final Transform transform;
     private int fov;
     private double k;
+
+    private double nearPlane = 0.1;
+    private double farPlane = 1000.0;
+    private double aspectRatio = 16.0 / 9.0;
+
+    public void setNearPlane(double n) { this.nearPlane = n; }
+    public void setFarPlane(double f) { this.farPlane = f; }
+    public void setAspectRatio(double a) { this.aspectRatio = a; }
+
 
     public Camera(Vec3 size) {
         this.offsetPos = new Vec3(0, 0,0);
@@ -88,4 +94,46 @@ public class Camera {
         double fovRad = Math.toRadians(fovDeg);
         return screenWidthM / (2.0 * Math.tan(fovRad / 2.0));
     }
+
+//    public Matrix4 getViewMatrix() {
+//        Quaternion rotInv = transform.getRot().normalize().conjugate();
+//        Matrix4 trans = Matrix4.translation(transform.getPos().scale(-1));
+//
+//        return Matrix4.rotate(rotInv).multiply(trans);
+//    }
+//    public Matrix4 getViewMatrix() {
+//        Quaternion camRotInv = transform.getRot().normalize().conjugate();
+//
+//        Quaternion flipZ = Quaternion.fromEuler(new Vec3(0, 0, Math.toRadians(180)));
+//
+//        Quaternion viewRot = flipZ.multiply(camRotInv);
+//
+//        Matrix4 rot = Matrix4.rotate(viewRot);
+//        Matrix4 trans = Matrix4.translation(transform.getPos().scale(-1));
+//
+//        return rot.multiply(trans); // V = R_view * T(-C)
+//    }
+    public Matrix4 getViewMatrix() {
+        Quaternion camRotInv = transform.getRot().normalize().conjugate();
+        Matrix4 rot = Matrix4.rotate(camRotInv);
+        Matrix4 trans = Matrix4.translation(transform.getPos().scale(-1));
+
+        Matrix4 flipZ = Matrix4.scale(new Vec3(1, 1, -1));
+
+        return flipZ.multiply(rot).multiply(trans);
+    }
+
+    public Matrix4 getProjectionMatrix() {
+        double f = 1.0 / Math.tan(Math.toRadians(fov) / 2.0);
+        double nf = 1.0 / (nearPlane - farPlane);
+        double[] m = new double[16];
+        m[0]  = f / aspectRatio;
+        m[5]  = f;
+        m[10] = (farPlane + nearPlane) * nf;
+        m[11] = -1.0;
+        m[14] = 2 * farPlane * nearPlane * nf;
+        return new Matrix4(m);
+    }
+
+
 }

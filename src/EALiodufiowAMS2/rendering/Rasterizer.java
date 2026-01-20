@@ -1,6 +1,6 @@
 package EALiodufiowAMS2.rendering;
 
-import EALiodufiowAMS2.helpers.Vec3;
+import EALiodufiowAMS2.rendering.renderingObject.Material;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -37,7 +37,7 @@ public class Rasterizer {
         this.bufferHeight = newHeight;
         this.frameBuffer = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_ARGB);
         this.zBuffer = new double[newWidth * newHeight];
-        clearBuffers(0xFF000000);
+        clearBuffers(0xff000000);
     }
 
     /** Czyści bufor koloru i głębokości */
@@ -46,6 +46,42 @@ public class Rasterizer {
         Arrays.fill(pixels, argb);
         Arrays.fill(zBuffer, Double.POSITIVE_INFINITY);
     }
+    public void clearBuffers(Material material) {
+        int[] pixels = ((DataBufferInt) frameBuffer.getRaster().getDataBuffer()).getData();
+
+        BufferedImage texture = material.getTexture();
+        Color color = material.getColor();
+
+        if (texture != null) {
+            fillWithTexture(pixels, texture);
+        } else if (color != null) {
+            Arrays.fill(pixels, color.getRGB());
+        } else {
+            Arrays.fill(pixels, 0xff5c6e7d);
+        }
+
+        Arrays.fill(zBuffer, Double.POSITIVE_INFINITY);
+    }
+
+    private void fillWithTexture(int[] pixels, BufferedImage texture) {
+        int w = frameBuffer.getWidth();
+        int h = frameBuffer.getHeight();
+
+        int texW = texture.getWidth();
+        int texH = texture.getHeight();
+
+        int[] texPixels = ((DataBufferInt) texture.getRaster().getDataBuffer()).getData();
+
+        for (int y = 0; y < h; y++) {
+            int ty = y % texH;
+            for (int x = 0; x < w; x++) {
+                int tx = x % texW;
+                pixels[y * w + x] = texPixels[ty * texW + tx];
+            }
+        }
+    }
+
+
 
     /** Rysuje quad (4 punkty) rozbijając go na dwa trójkąty */
     public void drawPolygon(Point[] pts, double[] depths, BufferedImage texture, Color color) {
@@ -60,6 +96,41 @@ public class Rasterizer {
         rasterizeTriangle(pts[0], pts[2], pts[3], depths[0], depths[2], depths[3],
                 u[0], v[0], u[2], v[2], u[3], v[3], texture, color);
     }
+
+    public void drawTriangle(
+            Point[] pts,
+            double[] depths,
+            double[] uvs,          // [u0, v0, u1, v1, u2, v2]
+            BufferedImage texture,
+            Color flatColor
+    ) {
+        if (pts == null || pts.length != 3) return;
+        if (depths == null || depths.length != 3) return;
+        if (uvs == null || uvs.length != 6) return;
+
+        Point p0 = pts[0];
+        Point p1 = pts[1];
+        Point p2 = pts[2];
+
+        double z0 = depths[0];
+        double z1 = depths[1];
+        double z2 = depths[2];
+
+        double u0 = uvs[0], v0 = uvs[1];
+        double u1 = uvs[2], v1 = uvs[3];
+        double u2 = uvs[4], v2 = uvs[5];
+
+        rasterizeTriangle(
+                p0, p1, p2,
+                z0, z1, z2,
+                u0, v0, u1, v1, u2, v2,
+                texture,
+                flatColor
+        );
+    }
+
+
+
 
     private void rasterizeTriangle(
             Point p0, Point p1, Point p2,

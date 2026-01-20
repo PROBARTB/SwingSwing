@@ -38,7 +38,7 @@ public class CurvedSegment extends TrackSegment {
 
         this.p3 = localEndPoint.getPos();
         // P2 wyliczamy cofając się od celu zgodnie z jego rotacją
-        Vec3 backwardDir = localEndPoint.getRot().rotate(new Vec3(0,0,-1));
+        Vec3 backwardDir = new Vec3(0,0,-1).rotate(localEndPoint.getRot());
         this.p2 = p3.add(backwardDir.scale(localEndPoint.getPos().z * 0.5));
 
         // Estymacja długości (bardzo zgrubna, w produkcji całkujemy)

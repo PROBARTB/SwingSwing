@@ -63,7 +63,7 @@ class TrackNetwork {
 
     // --- API dla Pojazdu ---
 
-    public Transform getVehicleTransform(String segmentId, double distance) {
+    public Transform getTransformAt(String segmentId, double distance) {
         TrackSegment seg = segments.get(segmentId);
         if (seg == null) return new Transform(new Vec3(0,0,0), Quaternion.identity());
 

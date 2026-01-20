@@ -1,10 +1,10 @@
-package EALiodufiowAMS2.rendering.renderers;
+package EALiodufiowAMS2.rendering.builders;
 
 import EALiodufiowAMS2.helpers.Transform;
-import EALiodufiowAMS2.rendering.renderingObjects.RenderingObject;
+import EALiodufiowAMS2.rendering.renderingObject.RenderingObject;
 import EALiodufiowAMS2.world.Camera;
 
-public interface Renderer {
+public interface Builder {
     void update(double deltaTime);
     java.util.List<String> getObjectIds();
     Transform getObjectTransform(String id);
