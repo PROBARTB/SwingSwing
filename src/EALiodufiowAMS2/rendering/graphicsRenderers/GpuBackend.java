@@ -29,50 +29,23 @@ public final class GpuBackend implements RenderBackend {
     private Scene scene;
     private Camera camera;
 
-    private int fboId;
-    private int colorTexId;
-    private int depthRbId;
-
+    // GPU resources
     private final ShaderProgram shader;
-
     private final Map<Mesh, GpuMeshHandle> meshCache = new HashMap<>();
     private final Map<BufferedImage, Integer> textureCache = new IdentityHashMap<>();
+
+    // per-frame commands (budowane przez RenderingEngine w EDT)
     private final List<DrawCommand> commands = new ArrayList<>();
 
-    private static boolean glInitialized = false;
-    private static long hiddenWindow = 0;
-
-    private static void ensureGlContext() {
-        if (glInitialized) return;
-
-        if (!GLFW.glfwInit()) {
-            throw new IllegalStateException("Failed to init GLFW");
-        }
-
-        GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
-        GLFW.glfwWindowHint(GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
-
-        hiddenWindow = GLFW.glfwCreateWindow(1, 1, "", 0, 0);
-        if (hiddenWindow == 0) {
-            throw new IllegalStateException("Failed to create hidden GLFW window");
-        }
-
-        GLFW.glfwMakeContextCurrent(hiddenWindow);
-        GL.createCapabilities();
-
-        glInitialized = true;
-    }
-
-
     public GpuBackend(int width, int height) {
-        ensureGlContext();
-
         this.width = width;
         this.height = height;
-
-        initFbo();
-        this.shader = createDefaultShader();
+        // UWAGA: tu nie dotykamy GL – kontekst nie jest jeszcze gotowy.
+        // Shader i inne zasoby GL tworzymy w init(), wołanym z GlRenderCanvas.initGL().
+        this.shader = new ShaderProgram(); // tylko trzyma źródła, realny program w init()
     }
+
+    // ----------------- API RenderBackend -----------------
 
     @Override
     public void setScene(Scene scene) {
@@ -83,19 +56,13 @@ public final class GpuBackend implements RenderBackend {
     public void resize(int width, int height) {
         this.width = width;
         this.height = height;
-        recreateFbo();
+        // brak GL-call’i – viewport ustawiamy w drawPreparedFrame()
     }
 
     @Override
     public void beginFrame(Camera camera) {
         this.camera = camera;
         commands.clear();
-
-        glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-        glViewport(0, 0, width, height);
-        glEnable(GL_DEPTH_TEST);
-        glClearColor(0.3f, 0.35f, 0.4f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
     @Override
@@ -105,27 +72,75 @@ public final class GpuBackend implements RenderBackend {
 
     @Override
     public void endFrame() {
-        if (camera == null) return;
+        // nic GL – tylko kończymy budowanie listy komend
+    }
+
+    @Override
+    public BufferedImage getFrameBuffer() {
+        // GPU backend nie wspiera readbacku – renderuje bezpośrednio do canvasu
+        return null;
+    }
+
+    // ----------------- API używane przez GlRenderCanvas -----------------
+
+    /**
+     * Wołane z GlRenderCanvas.initGL(), gdy kontekst GL jest już current.
+     * Tu tworzymy realny program shaderowy i inne zasoby GL zależne od kontekstu.
+     */
+    public void init() {
+        shader.initProgram(); // kompilacja i linkowanie shaderów
+        // brak FBO – rysujemy bezpośrednio do default framebuffer canvasu
+    }
+
+    /**
+     * Wołane z GlRenderCanvas.paintGL(), gdy kontekst GL jest current.
+     * Wykonuje GL-call’e na podstawie komend zbudowanych w beginFrame/submit/endFrame.
+     */
+    public void drawPreparedFrame() {
+        if (camera == null || scene == null) {
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glViewport(0, 0, width, height);
+            glClearColor(0f, 0f, 0f, 1f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            return;
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, width, height);
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // tło (void material)
+        Material voidMat = scene.getVoidMAterial();
+        if (voidMat != null) {
+            java.awt.Color c = voidMat.getColor();
+            float r = c.getRed()   / 255.0f;
+            float g = c.getGreen() / 255.0f;
+            float b = c.getBlue()  / 255.0f;
+            float a = c.getAlpha() / 255.0f;
+            glClearColor(r, g, b, a);
+        } else {
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        }
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         Matrix4 view = camera.getViewMatrix();
         Matrix4 proj = camera.getProjectionMatrix();
 
         shader.bind();
-
-        // Ustaw view/proj jako uniformy
         shader.setUniformMat4("uView", view);
         shader.setUniformMat4("uProj", proj);
 
-        // Na początek: bez sortowania, po kolei
         for (DrawCommand cmd : commands) {
             Mesh mesh = cmd.getMesh();
             GpuMeshHandle handle = meshCache.computeIfAbsent(mesh, this::uploadMesh);
 
-            // Model matrix
+            // model matrix
             Matrix4 model = cmd.getTransform().toModelMatrix();
             shader.setUniformMat4("uModel", model);
 
-            // Materiał: kolor + tekstura
+            // materiał
             Material mat = cmd.getMaterial();
             int texId = 0;
             boolean hasTexture = false;
@@ -142,92 +157,43 @@ public final class GpuBackend implements RenderBackend {
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, texId);
                 shader.setUniformInt("uTexture", 0);
+            } else {
+                glBindTexture(GL_TEXTURE_2D, 0);
             }
 
             glBindVertexArray(handle.vaoId);
 
             Mesh.FaceRange range = mesh.getFaceRange(cmd.getFaceType());
-            if (range == null) continue;
-
-            glDrawElements(GL_TRIANGLES, range.indexCount, GL_UNSIGNED_INT, (long) range.startIndex * Integer.BYTES);
-        }
-
-        glBindVertexArray(0);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        shader.unbind();
-    }
-
-    @Override
-    public BufferedImage getFrameBuffer() {
-        BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-        int[] pixels = ((DataBufferInt) img.getRaster().getDataBuffer()).getData();
-
-        glBindTexture(GL_TEXTURE_2D, colorTexId);
-
-        IntBuffer ib = BufferUtils.createIntBuffer(width * height);
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, ib);
-
-        int[] raw = new int[width * height];
-        ib.get(raw);
-
-        // Odwrócenie pionowe + zamiana RGBA → ARGB
-        for (int y = 0; y < height; y++) {
-            int srcRow = (height - 1 - y) * width;
-            int dstRow = y * width;
-
-            for (int x = 0; x < width; x++) {
-                int rgba = raw[srcRow + x];
-
-                int r = (rgba)       & 0xFF;
-                int g = (rgba >> 8)  & 0xFF;
-                int b = (rgba >> 16) & 0xFF;
-                int a = (rgba >> 24) & 0xFF;
-
-                pixels[dstRow + x] = (a << 24) | (r << 16) | (g << 8) | b;
+            if (range != null) {
+                glDrawElements(GL_TRIANGLES, range.indexCount, GL_UNSIGNED_INT,
+                        (long) range.startIndex * Integer.BYTES);
             }
         }
 
+        glBindVertexArray(0);
         glBindTexture(GL_TEXTURE_2D, 0);
-        return img;
+        shader.unbind();
     }
 
-
-
-    // ----------------- FBO -----------------
-
-    private void initFbo() {
-        fboId = glGenFramebuffers();
-        glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-
-        // Color attachment
-        colorTexId = glGenTextures();
-        glBindTexture(GL_TEXTURE_2D, colorTexId);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
-                GL_RGBA, GL_UNSIGNED_BYTE, (ByteBuffer) null);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexId, 0);
-
-        // Depth renderbuffer
-        depthRbId = glGenRenderbuffers();
-        glBindRenderbuffer(GL_RENDERBUFFER, depthRbId);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width, height);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRbId);
-
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-            throw new IllegalStateException("FBO is not complete");
+    /**
+     * Sprzątanie zasobów GL – wołane z GlRenderCanvas.dispose().
+     */
+    public void dispose() {
+        // meshe
+        for (GpuMeshHandle h : meshCache.values()) {
+            glDeleteBuffers(h.vboId);
+            glDeleteBuffers(h.eboId);
+            glDeleteVertexArrays(h.vaoId);
         }
+        meshCache.clear();
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-
-    private void recreateFbo() {
-        if (fboId != 0) {
-            glDeleteFramebuffers(fboId);
-            glDeleteTextures(colorTexId);
-            glDeleteRenderbuffers(depthRbId);
+        // tekstury
+        for (Integer texId : textureCache.values()) {
+            glDeleteTextures(texId);
         }
-        initFbo();
+        textureCache.clear();
+
+        shader.dispose();
     }
 
     // ----------------- Mesh upload -----------------
@@ -242,7 +208,7 @@ public final class GpuBackend implements RenderBackend {
         Vertex[] verts = mesh.getVertices();
         int[] indices = mesh.getIndices();
 
-        // Vertex data: position (3) + uv (2) = 5 floats
+        // position (3) + uv (2) = 5 floats
         FloatBuffer vbuf = BufferUtils.createFloatBuffer(verts.length * 5);
         for (Vertex v : verts) {
             vbuf.put((float) v.position.x);
@@ -290,7 +256,7 @@ public final class GpuBackend implements RenderBackend {
         img.getRGB(0, 0, w, h, pixels, 0, w);
 
         ByteBuffer buffer = BufferUtils.createByteBuffer(w * h * 4);
-        // OpenGL expects bottom-up, ale tu możemy wysłać top-down i tylko przy odczycie odwracać
+        // wysyłamy top-down, a w shaderze odwracamy v
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 int argb = pixels[y * w + x];
@@ -318,48 +284,6 @@ public final class GpuBackend implements RenderBackend {
         return texId;
     }
 
-    // ----------------- Shader -----------------
-
-    private ShaderProgram createDefaultShader() {
-        String vsSrc = """
-                #version 330 core
-                layout(location = 0) in vec3 aPosition;
-                layout(location = 1) in vec2 aTexCoord;
-
-                uniform mat4 uModel;
-                uniform mat4 uView;
-                uniform mat4 uProj;
-
-                out vec2 vTexCoord;
-
-                void main() {
-                    vTexCoord = aTexCoord;
-                    gl_Position = uProj * uView * uModel * vec4(aPosition, 1.0);
-                }
-                """;
-
-        String fsSrc = """
-                #version 330 core
-                in vec2 vTexCoord;
-                out vec4 FragColor;
-
-                uniform sampler2D uTexture;
-                uniform vec4 uColor;
-                uniform int uUseTexture;
-
-                void main() {
-                    if (uUseTexture == 1) {
-                        vec4 texColor = texture(uTexture, vTexCoord);
-                        FragColor = texColor * uColor;
-                    } else {
-                        FragColor = uColor;
-                    }
-                }
-                """;
-
-        return new ShaderProgram(vsSrc, fsSrc);
-    }
-
     // ----------------- Helper classes -----------------
 
     private static final class GpuMeshHandle {
@@ -379,11 +303,54 @@ public final class GpuBackend implements RenderBackend {
     }
 
     public static final class ShaderProgram {
-        private final int programId;
+        private int programId = 0;
 
-        public ShaderProgram(String vertexSrc, String fragmentSrc) {
-            int vs = compileShader(GL_VERTEX_SHADER, vertexSrc);
-            int fs = compileShader(GL_FRAGMENT_SHADER, fragmentSrc);
+        // źródła shaderów – program tworzymy dopiero w init()
+        private static final String VS_SRC = """
+                #version 330 core
+                layout(location = 0) in vec3 aPosition;
+                layout(location = 1) in vec2 aTexCoord;
+
+                uniform mat4 uModel;
+                uniform mat4 uView;
+                uniform mat4 uProj;
+
+                out vec2 vTexCoord;
+
+                void main() {
+                    vTexCoord = aTexCoord;
+                    gl_Position = uProj * uView * uModel * vec4(aPosition, 1.0);
+                }
+                """;
+
+        private static final String FS_SRC = """
+                #version 330 core
+                in vec2 vTexCoord;
+                out vec4 FragColor;
+
+                uniform sampler2D uTexture;
+                uniform vec4 uColor;
+                uniform int uUseTexture;
+
+                void main() {
+                    if (uUseTexture == 1) {
+                        vec4 texColor = texture(uTexture, vec2(vTexCoord.x, 1.0 - vTexCoord.y));
+                        FragColor = texColor;
+                    } else {
+                        FragColor = uColor;
+                    }
+                }
+                """;
+
+        public ShaderProgram() {
+            // pusty – realny program tworzymy w initProgram()
+        }
+
+        public void initProgram() {
+            if (programId != 0) return; // już zainicjalizowany
+
+            int vs = compileShader(GL_VERTEX_SHADER, VS_SRC);
+            int fs = compileShader(GL_FRAGMENT_SHADER, FS_SRC);
 
             programId = glCreateProgram();
             glAttachShader(programId, vs);
@@ -419,6 +386,13 @@ public final class GpuBackend implements RenderBackend {
 
         public void unbind() {
             glUseProgram(0);
+        }
+
+        public void dispose() {
+            if (programId != 0) {
+                glDeleteProgram(programId);
+                programId = 0;
+            }
         }
 
         public void setUniformMat4(String name, Matrix4 mat) {

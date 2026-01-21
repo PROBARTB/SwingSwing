@@ -56,7 +56,7 @@ public class Camera {
         this.transform.setPos(cameraPos);
         this.transform.setRot(cameraRot);
 
-        System.out.println("Camera update: pos=" + cameraPos + " rot=" + cameraRot.toEuler());
+        //System.out.println("Camera update: pos=" + cameraPos + " rot=" + cameraRot.toEuler());
     }
 
 

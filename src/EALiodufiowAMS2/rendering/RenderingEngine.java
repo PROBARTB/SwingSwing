@@ -3,6 +3,9 @@ package EALiodufiowAMS2.rendering;
 import EALiodufiowAMS2.rendering.graphicsRenderers.CpuBackend;
 import EALiodufiowAMS2.rendering.graphicsRenderers.GpuBackend;
 import EALiodufiowAMS2.rendering.graphicsRenderers.RenderBackend;
+import EALiodufiowAMS2.rendering.renderViews.CpuRenderView;
+import EALiodufiowAMS2.rendering.renderViews.GpuRenderView;
+import EALiodufiowAMS2.rendering.renderViews.RenderView;
 import EALiodufiowAMS2.rendering.renderers.CuboidRenderer;
 import EALiodufiowAMS2.rendering.renderers.GeometryRenderer;
 import EALiodufiowAMS2.rendering.renderingObject.*;
@@ -42,28 +45,42 @@ public final class RenderingEngine {
     private Scene scene;
     private Camera camera;
     private final RenderBackend backend;
+    private final RenderView renderView;
     private final Map<Class<? extends Geometry>, GeometryRenderer> renderers = new HashMap<>();
 
-    public RenderingEngine(int resWidth, int resHeight) {
-        //this.backend = new CpuBackend(resWidth, resHeight);
-        this.backend = new GpuBackend(resWidth, resHeight);
+    public RenderingEngine(int resWidth, int resHeight, boolean useGpu) {
+        if (useGpu) {
+            GpuBackend gpu = new GpuBackend(resWidth, resHeight);
+            this.backend = gpu;
+            this.renderView = new GpuRenderView(gpu);
+        } else {
+            CpuBackend cpu = new CpuBackend(resWidth, resHeight);
+            this.backend = cpu;
+            this.renderView = new CpuRenderView(cpu);
+        }
         registerRenderer(new CuboidRenderer());
     }
 
     public void setCamera(Camera camera) {
         this.camera = camera;
     }
+
     public void setScene(Scene scene) {
         this.scene = scene;
         this.backend.setScene(scene);
     }
-    public void setBufferSize(int w, int h) { this.backend.resize(w, h);}
+
+    public void setBufferSize(int w, int h) {
+        this.backend.resize(w, h);
+    }
 
     public void registerRenderer(GeometryRenderer renderer) {
         renderers.put(renderer.getSupportedGeometry(), renderer);
     }
 
-    public void renderFrame(Graphics2D g) {
+    public void renderFrame() {
+        if (scene == null || camera == null) return;
+
         backend.beginFrame(camera);
         for (RenderingObject obj : scene.getObjects()) {
             Geometry geom = obj.getGeometry();
@@ -75,7 +92,7 @@ public final class RenderingEngine {
         backend.endFrame();
     }
 
-    public BufferedImage getFrameBuffer() {
-        return backend.getFrameBuffer();
+    public RenderView getRenderView() {
+        return renderView;
     }
 }

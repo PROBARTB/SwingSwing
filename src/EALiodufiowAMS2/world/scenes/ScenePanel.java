@@ -5,6 +5,7 @@ import EALiodufiowAMS2.helpers.Units;
 import EALiodufiowAMS2.helpers.Vec3;
 import EALiodufiowAMS2.rendering.RenderingEngine;
 import EALiodufiowAMS2.rendering.graphicsRenderers.CpuBackend;
+import EALiodufiowAMS2.rendering.renderViews.RenderView;
 import EALiodufiowAMS2.rendering.renderingObject.RenderingObject;
 import EALiodufiowAMS2.rendering.builders.Builder;
 import EALiodufiowAMS2.world.Camera;
@@ -22,23 +23,32 @@ public class ScenePanel extends JPanel {
     private final World world;
     private final List<Builder> builders = new ArrayList<>();
     private final RenderingEngine renderingEngine;
+    private final RenderView renderView;
     protected final Camera camera;
-
     private Scene scene;
+
+    private final OverlayPanel overlayPanel;
 
     public ScenePanel(World world, Scene scene, int resWidth, int resHeight) {
         this.world = world;
         this.scene = scene;
 
-        this.renderingEngine = new RenderingEngine(resWidth, resHeight);
-        this.renderingEngine.setScene(this.scene);
-
         this.camera = new Camera(new Vec3(resWidth / Units.M_TO_PX, resHeight / Units.M_TO_PX, 0), new Vec3(0, 0, -5), new Vec3(Math.toRadians(0), Math.toRadians(0), Math.toRadians(0)), 75);
         //this.camera = new Camera(new Vec3(resWidth / Units.M_TO_PX, resHeight / Units.M_TO_PX, 0), new Vec3(0, 0, 0), new Vec3(Math.toRadians(0), Math.toRadians(0), Math.toRadians(0)), 75);
 
+        this.renderingEngine = new RenderingEngine(resWidth, resHeight, true);
+
+        this.renderView = this.renderingEngine.getRenderView();
+        setLayout(new BorderLayout());
+        add(renderView.getComponent(), BorderLayout.CENTER);
+
+        this.overlayPanel = new OverlayPanel();
+        //add(overlayPanel);
+
+        this.renderingEngine.setScene(this.scene);
         this.renderingEngine.setCamera(this.camera);
 
-        setDoubleBuffered(true);
+        setDoubleBuffered(false);
 
         setBorder(BorderFactory.createLineBorder(Color.RED, 3));
 
@@ -97,19 +107,19 @@ public class ScenePanel extends JPanel {
         }
 
         scene.setObjects(objects);
+
+        renderingEngine.renderFrame();
+        renderView.repaintView();
         repaint();
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        renderingEngine.renderFrame((Graphics2D) g);
 
-        BufferedImage frame = renderingEngine.getFrameBuffer();
-        g.drawImage(frame, 0, 0, getWidth(), getHeight(), null);
-
-        g.setColor(Color.GREEN);
-        g.drawString("FPS: " + ((GamePanel) SwingUtilities.getWindowAncestor(this)).currentFps, 10, 20);
+        //g.setColor(Color.GREEN);
+        //g.drawString("FPS: " + ((GamePanel) SwingUtilities.getWindowAncestor(this)).currentFps, 10, 20);
+        this.overlayPanel.setFps(((GamePanel) SwingUtilities.getWindowAncestor(this)).currentFps);
     }
 }
 

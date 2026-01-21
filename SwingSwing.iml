@@ -10,30 +10,25 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl.jar!/" />
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl-natives-windows.jar!/" />
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl-opengl.jar!/" />
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl-opengl-natives-windows.jar!/" />
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl-stb.jar!/" />
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl-stb-natives-windows.jar!/" />
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl-unsafe.jar!/" />
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl-assimp.jar!/" />
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl-assimp-natives-windows.jar!/" />
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl-glfw.jar!/" />
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl-glfw-natives-windows.jar!/" />
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl-openal.jar!/" />
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl-openal-natives-windows.jar!/" />
+          <root url="jar://$USER_HOME$/Downloads/lwjgl3-awt-main/target/lwjgl3-awt-0.2.3.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl-opengl-sources.jar!/" />
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl-sources.jar!/" />
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl-stb-sources.jar!/" />
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl-unsafe-sources.jar!/" />
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl-assimp-sources.jar!/" />
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl-glfw-sources.jar!/" />
-          <root url="jar://$USER_HOME$/Downloads/lwjgl-release-3.4.0-custom/lwjgl-openal-sources.jar!/" />
+          <root url="jar://$USER_HOME$/Downloads/lwjgl3-awt-main/target/lwjgl3-awt-0.2.3-sources.jar!/" />
         </SOURCES>
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library>
+        <CLASSES>
+          <root url="file://$USER_HOME$/Downloads/java open gl pain/lwjgl-release-3.3.6-custom" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="file://$USER_HOME$/Downloads/java open gl pain/lwjgl-release-3.3.6-custom" />
+        </SOURCES>
+        <jarDirectory url="file://$USER_HOME$/Downloads/java open gl pain/lwjgl-release-3.3.6-custom" recursive="false" />
+        <jarDirectory url="file://$USER_HOME$/Downloads/java open gl pain/lwjgl-release-3.3.6-custom" recursive="false" type="SOURCES" />
       </library>
     </orderEntry>
   </component>
