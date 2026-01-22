@@ -4,11 +4,16 @@ import EALiodufiowAMS2.helpers.*;
 import EALiodufiowAMS2.rendering.builders.Builder;
 import EALiodufiowAMS2.rendering.builders.BuilderTest3D;
 import EALiodufiowAMS2.rendering.renderingObject.Material;
+import EALiodufiowAMS2.uiRendering.UiAnchor;
+import EALiodufiowAMS2.uiRendering.UiLabelObject;
+import EALiodufiowAMS2.uiRendering.UiObject;
 import EALiodufiowAMS2.world.World;
 
 import java.awt.*;
 
 public class SceneTest3d extends ScenePanel {
+
+    private final UiObject fpsUi;
 
     public SceneTest3d(World world, int resWidth, int resHeight) {
         super(world, new Scene(new Material(new Color(0xff5c6e7d, true))), resWidth, resHeight);
@@ -26,5 +31,13 @@ public class SceneTest3d extends ScenePanel {
 
         //attachCameraTo(staticTransform);
         attachCameraTo(t);
+
+
+
+
+        fpsUi = new UiLabelObject( "fps", "FPS: --", UiAnchor.TOP_LEFT, 500, 500 );
+        getScene().addUiObject(fpsUi);
     }
+
+    public UiObject getFpsUi() { return fpsUi; }
 }

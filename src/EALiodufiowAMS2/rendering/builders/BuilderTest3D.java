@@ -49,6 +49,13 @@ public class BuilderTest3D implements Builder {
         RenderingObject rotatingCube1 = new RenderingObject(cubeGeoColored, t2);
         objects.put("rotatingCube1", rotatingCube1);
 
+        Transform t3 = new Transform();
+        t3.setPos(new Vec3(3, 0, 2));
+        t3.setSize(new Vec3(2, 2, 2));
+        t3.setRot(Quaternion.fromEuler(new Vec3(Math.toRadians(0), 0, 0)));
+        RenderingObject cube3 = new RenderingObject(cubeGeoTextured, t3);
+        objects.put("cube3", cube3);
+
 
 //        Surface s1 = new Surface(FaceType.FRONT, TextureManager.getTexture("assets\\texture.png"), Color.PINK);
 //        Rectangle rect1 = new Rectangle(new Transform(), s1);

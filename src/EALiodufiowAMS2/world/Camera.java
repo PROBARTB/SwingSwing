@@ -12,12 +12,8 @@ public class Camera {
 
     private double nearPlane = 0.1;
     private double farPlane = 1000.0;
-    private double aspectRatio = 16.0 / 9.0;
-
-    public void setNearPlane(double n) { this.nearPlane = n; }
-    public void setFarPlane(double f) { this.farPlane = f; }
-    public void setAspectRatio(double a) { this.aspectRatio = a; }
-
+    private double aspectRatio;
+    private boolean useDynamicAspectRatio = true;
 
     public Camera(Vec3 size) {
         this.offsetPos = new Vec3(0, 0,0);
@@ -32,6 +28,11 @@ public class Camera {
         this.transform = new Transform(size);
         this.fov = fov;
         this.k = fovToK(fov, this.transform.getSize().x);
+    }
+    public Camera( Vec3 size, Vec3 offsetPos, Vec3 offsetRot, int fov, double aspectRatio) {
+        this(size, offsetPos, offsetRot, fov);
+        this.useDynamicAspectRatio = false;
+        this.aspectRatio = aspectRatio;
     }
 
     public void attachTo(Transform attachedTransform) {
@@ -80,7 +81,9 @@ public class Camera {
 
     public void setSize(double w, double h) {
         this.transform.setSize(new Vec3(w, h, 0));
-        System.out.println(w +"x"+ h + " " + this.transform.getSize());
+        if(this.useDynamicAspectRatio) this.aspectRatio = w / h;
+
+        System.out.println("Camera size set:" + w +"x"+ h + " " + this.transform.getSize());
     }
 
     public int getFov() { return fov; }
@@ -94,6 +97,11 @@ public class Camera {
         double fovRad = Math.toRadians(fovDeg);
         return screenWidthM / (2.0 * Math.tan(fovRad / 2.0));
     }
+    public void setNearPlane(double n) { this.nearPlane = n; }
+    public void setFarPlane(double f) { this.farPlane = f; }
+    public void setAspectRatio(double ratio) { this.aspectRatio = ratio; }
+    public void setUseDynamicAspectRatio(boolean use) { this.useDynamicAspectRatio = use; }
+
 
 //    public Matrix4 getViewMatrix() {
 //        Quaternion rotInv = transform.getRot().normalize().conjugate();

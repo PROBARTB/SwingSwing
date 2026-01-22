@@ -8,6 +8,8 @@ import EALiodufiowAMS2.rendering.graphicsRenderers.CpuBackend;
 import EALiodufiowAMS2.rendering.renderViews.RenderView;
 import EALiodufiowAMS2.rendering.renderingObject.RenderingObject;
 import EALiodufiowAMS2.rendering.builders.Builder;
+import EALiodufiowAMS2.uiRendering.UiObject;
+import EALiodufiowAMS2.uiRendering.UiOverlayEngine;
 import EALiodufiowAMS2.world.Camera;
 import EALiodufiowAMS2.world.GamePanel;
 import EALiodufiowAMS2.world.World;
@@ -27,7 +29,9 @@ public class ScenePanel extends JPanel {
     protected final Camera camera;
     private Scene scene;
 
-    private final OverlayPanel overlayPanel;
+//    private SceneOverlayWindow overlayWindow;
+//private OverlayLabelWindow fpsOverlay; private OverlayLabelWindow modeOverlay; private OverlayLabelWindow debugOverlay;
+private UiOverlayEngine uiOverlayEngine;
 
     public ScenePanel(World world, Scene scene, int resWidth, int resHeight) {
         this.world = world;
@@ -42,8 +46,9 @@ public class ScenePanel extends JPanel {
         setLayout(new BorderLayout());
         add(renderView.getComponent(), BorderLayout.CENTER);
 
-        this.overlayPanel = new OverlayPanel();
-        //add(overlayPanel);
+       // addHierarchyListener(e -> { if ((e.getChangeFlags() & HierarchyEvent.DISPLAYABILITY_CHANGED) != 0) { if (isDisplayable()) { attachOverlayWindow(); } else { detachOverlayWindow(); } } });
+        //addHierarchyListener(e -> { if ((e.getChangeFlags() & HierarchyEvent.DISPLAYABILITY_CHANGED) != 0) { if (isDisplayable()) { attachOverlays(); } else { detachOverlays(); } } });
+        addHierarchyListener(e -> { if ((e.getChangeFlags() & HierarchyEvent.DISPLAYABILITY_CHANGED) != 0) { if (isDisplayable()) { attachUiOverlayEngine(); } else { detachUiOverlayEngine(); } } });
 
         this.renderingEngine.setScene(this.scene);
         this.renderingEngine.setCamera(this.camera);
@@ -61,10 +66,25 @@ public class ScenePanel extends JPanel {
                 renderingEngine.setBufferSize(w, h);
 
                 System.out.println("ScenePanel resized: " + w + "x" + h);
+
+                //if (overlayWindow != null) { overlayWindow.updateBounds(); }
+               //if (fpsOverlay != null) fpsOverlay.updateBounds(); if (modeOverlay != null) modeOverlay.updateBounds(); if (debugOverlay != null) debugOverlay.updateBounds();
+                if (uiOverlayEngine != null) { uiOverlayEngine.updateAllBounds(); }
             }
         });
 
     }
+
+    public Scene getScene() { return this.scene; }
+
+    // private void attachOverlayWindow() { if (overlayWindow != null) return; Window owner = SwingUtilities.getWindowAncestor(this); if (owner == null) return; overlayWindow = new SceneOverlayWindow(owner, this); overlayWindow.updateBounds(); overlayWindow.setVisible(true); } private void detachOverlayWindow() { if (overlayWindow != null) { overlayWindow.setVisible(false); overlayWindow.dispose(); overlayWindow = null; } } public void updateFpsOverlay(int fps) { if (overlayWindow != null) { overlayWindow.setFps(fps); } }
+    //private void attachOverlays() { Window owner = SwingUtilities.getWindowAncestor(this); if (owner == null) return; if (fpsOverlay == null) { fpsOverlay = new OverlayLabelWindow( owner, this, OverlayLabelWindow.Anchor.TOP_LEFT, 10, 10 ); fpsOverlay.setText("FPS: --"); fpsOverlay.updateBounds(); } if (modeOverlay == null) { modeOverlay = new OverlayLabelWindow( owner, this, OverlayLabelWindow.Anchor.TOP_RIGHT, 10, 10 ); modeOverlay.setText("Mode: default"); modeOverlay.updateBounds(); } if (debugOverlay == null) { debugOverlay = new OverlayLabelWindow( owner, this, OverlayLabelWindow.Anchor.BOTTOM_LEFT, 10, 10 ); debugOverlay.setText("Debug: off"); debugOverlay.updateBounds(); } } private void detachOverlays() { if (fpsOverlay != null) { fpsOverlay.setVisible(false); fpsOverlay.dispose(); fpsOverlay = null; } if (modeOverlay != null) { modeOverlay.setVisible(false); modeOverlay.dispose(); modeOverlay = null; } if (debugOverlay != null) { debugOverlay.setVisible(false); debugOverlay.dispose(); debugOverlay = null; } } public void updateFps(int fps) { if (fpsOverlay != null) { fpsOverlay.setText("FPS: " + fps); } } public void updateMode(String mode) { if (modeOverlay != null) { modeOverlay.setText("Mode: " + mode); } } public void updateDebug(String text) { if (debugOverlay != null) { debugOverlay.setText("Debug: " + text); } }
+    private void attachUiOverlayEngine() { if (uiOverlayEngine != null) return; if (scene == null) return; Window owner = SwingUtilities.getWindowAncestor(this); if (owner == null) return; uiOverlayEngine = new UiOverlayEngine(scene, this); } private void detachUiOverlayEngine() { if (uiOverlayEngine != null) { uiOverlayEngine.disposeAll(); uiOverlayEngine = null; } }
+
+    // Pomocnicza metoda do aktualizacji UI z zewnątrz
+    public void updateUiObject(UiObject uiObject) { if (uiOverlayEngine != null) { uiOverlayEngine.updateUiObject(uiObject); } }
+
+
 
     public void addRenderer(Builder r) { builders.add(r); }
 
@@ -110,8 +130,13 @@ public class ScenePanel extends JPanel {
 
         renderingEngine.renderFrame();
         renderView.repaintView();
-        repaint();
+
+        //repaint();
     }
+
+//    public void setFpsOverlay() {
+//        this.overlayWindow.setFps(((GamePanel) SwingUtilities.getWindowAncestor(this)).currentFps);
+//    }
 
     @Override
     protected void paintComponent(Graphics g) {
@@ -119,7 +144,7 @@ public class ScenePanel extends JPanel {
 
         //g.setColor(Color.GREEN);
         //g.drawString("FPS: " + ((GamePanel) SwingUtilities.getWindowAncestor(this)).currentFps, 10, 20);
-        this.overlayPanel.setFps(((GamePanel) SwingUtilities.getWindowAncestor(this)).currentFps);
+
     }
 }
 

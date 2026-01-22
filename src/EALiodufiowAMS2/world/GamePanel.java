@@ -1,6 +1,10 @@
 package EALiodufiowAMS2.world;
 
+import EALiodufiowAMS2.uiRendering.UiLabelObject;
+import EALiodufiowAMS2.uiRendering.UiObject;
+import EALiodufiowAMS2.world.scenes.OverlayPanel;
 import EALiodufiowAMS2.world.scenes.ScenePanel;
+import EALiodufiowAMS2.world.scenes.SceneTest3d;
 
 import javax.swing.*;
 import java.awt.*;
@@ -33,7 +37,7 @@ public class GamePanel extends JFrame {
         //enterFullscreen(1920, 1080); // niger staś
 
         // 30 FPS → 33 ms
-        timer = new Timer(15, e -> {
+        timer = new Timer(5, e -> {
             long now = System.nanoTime();
 
             if (scene != null && !paused) {
@@ -42,11 +46,18 @@ public class GamePanel extends JFrame {
 
                 scene.stepAndRender(deltaTime);
 
+                //scene.updateFps(currentFps);
+                //scene.updateMode("Play");
+               // scene.updateDebug("Time: " + lastNanoTime);
+
                 frames++;
                 if (now - lastFpsTime >= 1_000_000_000L) {
                     currentFps = frames;
                     frames = 0;
                     lastFpsTime = now;
+
+                    if (scene instanceof SceneTest3d st3d) { UiObject fpsUi = st3d.getFpsUi(); fpsUi.setText("FPS: " + currentFps); st3d.updateUiObject(fpsUi); }
+
                 }
             } else {
                 lastNanoTime = now;
@@ -69,6 +80,10 @@ public class GamePanel extends JFrame {
 
     public void setScene(ScenePanel scene) {
         this.scene = scene;
+
+
+        add(new OverlayPanel());
+
         add(scene);
     }
 
