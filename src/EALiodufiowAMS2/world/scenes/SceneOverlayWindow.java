@@ -1,5 +1,7 @@
 package EALiodufiowAMS2.world.scenes;
 
+import EALiodufiowAMS2.general.ScenePanel;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;

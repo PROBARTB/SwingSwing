@@ -1,9 +1,11 @@
 package EALiodufiowAMS2.world.scenes;
 
+import EALiodufiowAMS2.general.Scene;
+import EALiodufiowAMS2.general.ScenePanel;
 import EALiodufiowAMS2.helpers.Quaternion;
 import EALiodufiowAMS2.helpers.Transform;
 import EALiodufiowAMS2.helpers.Vec3;
-import EALiodufiowAMS2.rendering.renderingObject.Material;
+import EALiodufiowAMS2.engine.rendering.renderingObject.Material;
 import EALiodufiowAMS2.world.World;
 
 import java.awt.*;

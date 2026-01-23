@@ -1,13 +1,13 @@
 package EALiodufiowAMS2.world.scenes;
 
+import EALiodufiowAMS2.general.ScenePanel;
+
 import javax.swing.*;
 
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.HierarchyEvent;
-
-import static javax.swing.text.StyleConstants.setBackground;
 
 public class OverlayLabelWindow extends JWindow {
     private final JLabel label;
