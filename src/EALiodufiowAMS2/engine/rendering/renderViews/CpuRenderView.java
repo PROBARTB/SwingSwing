@@ -12,6 +12,7 @@ public final class CpuRenderView extends JComponent implements RenderView {
     public CpuRenderView(RenderBackend backend) {
         this.backend = backend;
         setDoubleBuffered(false);
+        backend.init();
     }
 
     @Override

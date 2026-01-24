@@ -1,5 +1,7 @@
 package EALiodufiowAMS2.engine.rendering.graphicsRenderers;
 
+import EALiodufiowAMS2.engine.rendering.RenderingEngineListener;
+import EALiodufiowAMS2.engine.rendering.RenderingMode;
 import EALiodufiowAMS2.helpers.Matrix4;
 import EALiodufiowAMS2.helpers.Mesh;
 import EALiodufiowAMS2.helpers.Vec3;
@@ -7,13 +9,14 @@ import EALiodufiowAMS2.helpers.Vertex;
 import EALiodufiowAMS2.engine.rendering.DrawCommand;
 import EALiodufiowAMS2.engine.rendering.Rasterizer;
 import EALiodufiowAMS2.engine.rendering.renderingObject.Material;
-import EALiodufiowAMS2.general.Camera;
-import EALiodufiowAMS2.general.Scene;
+import EALiodufiowAMS2.engine.Camera;
+import EALiodufiowAMS2.engine.Scene;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
 public final class CpuBackend implements RenderBackend {
+    private RenderingEngineListener listener;
 
     private final Rasterizer rasterizer;
     private Camera camera;
@@ -22,6 +25,23 @@ public final class CpuBackend implements RenderBackend {
     public CpuBackend(int width, int height) {
         this.rasterizer = new Rasterizer(width, height);
     }
+
+    @Override
+    public void setListener(RenderingEngineListener listener) {
+        this.listener = listener;
+    }
+
+    @Override
+    public void init() {
+        listener.onBackendInitialized();
+    }
+
+    @Override
+    public RenderingMode getRenderingMode() { return RenderingMode.CPU; }
+    @Override
+    public int getWidth() { return this.rasterizer.getBufferWidth(); }
+    @Override
+    public int getHeight() { return this.rasterizer.getBufferHeight(); }
 
     @Override
     public void setScene(Scene scene) {

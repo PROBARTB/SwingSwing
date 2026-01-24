@@ -7,12 +7,16 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.HierarchyBoundsListener;
 import java.awt.event.HierarchyEvent;
 import java.util.*;
+import java.util.List;
 
 
 public class UiOverlayEngine {
 
     private final JComponent basePanel; // panel z AWTGLCanvas
     private UiOverlay overlay;
+
+    private final List<JWindow> managedWindows = new ArrayList<>();
+
 
     private final ComponentAdapter componentListener = new ComponentAdapter() {
         @Override
@@ -90,19 +94,24 @@ public class UiOverlayEngine {
     }
 
     private void disposeCurrentWindows() {
-        if (overlay == null) {
-            return;
+        //System.out.println("disposing windows (managedWindows size=" + managedWindows.size() + ")");
+
+        for (JWindow window : managedWindows) {
+            //System.out.println("disposing window " + window);
+            window.setVisible(false);
+            window.dispose();
         }
-        for (UiOverlayLayer layer : overlay.getLayers()) {
-            for (UiOverlayElement element : layer.getElements()) {
-                if (element.window != null) {
-                    element.window.setVisible(false);
-                    element.window.dispose();
+        managedWindows.clear();
+
+        if (overlay != null) {
+            for (UiOverlayLayer layer : overlay.getLayers()) {
+                for (UiOverlayElement element : layer.getElements()) {
                     element.window = null;
                 }
             }
         }
     }
+
 
     private void ensureWindowForElement(UiOverlayElement element) {
         if (element.window != null) return;
@@ -114,13 +123,13 @@ public class UiOverlayEngine {
         window.setFocusableWindowState(false);
         window.setBackground(new Color(0, 0, 0, 0));
 
-        // prosty contentPane z BorderLayout
         JPanel content = new JPanel(new BorderLayout());
         content.setOpaque(false);
         content.add(element.getComponent(), BorderLayout.CENTER);
         window.setContentPane(content);
 
         element.window = window;
+        managedWindows.add(window);
     }
 
     private void doUpdateLayout() {

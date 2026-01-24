@@ -1,11 +1,16 @@
 package EALiodufiowAMS2.engine.rendering.renderViews;
 
+import EALiodufiowAMS2.engine.rendering.GpuInfo;
 import EALiodufiowAMS2.engine.rendering.graphicsRenderers.GpuBackend;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.awt.AWTGLCanvas;
 import org.lwjgl.opengl.awt.GLData;
 
 import java.awt.*;
+
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL11.GL_VERSION;
+import static org.lwjgl.opengl.GL11.glGetString;
 
 public final class GlRenderCanvas extends AWTGLCanvas {
     private final GpuBackend backend;
@@ -27,6 +32,7 @@ public final class GlRenderCanvas extends AWTGLCanvas {
     @Override
     public void initGL() {
         GL.createCapabilities();
+        backend.setGpuInfo(new GpuInfo(glGetString(GL_RENDERER), glGetString(GL_VENDOR), glGetString(GL_VERSION)));
         backend.init();
     }
 

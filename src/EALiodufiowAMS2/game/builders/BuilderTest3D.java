@@ -109,6 +109,9 @@ public class BuilderTest3D implements Builder {
     }
 
     @Override
+    public List<RenderingObject> getRenderingObjects() { return new ArrayList<>(objects.values());};
+
+    @Override
     public RenderingObject buildRenderingObject(String id) {
         return objects.get(id);
     }

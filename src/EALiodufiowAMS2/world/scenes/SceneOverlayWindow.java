@@ -1,6 +1,6 @@
 package EALiodufiowAMS2.world.scenes;
 
-import EALiodufiowAMS2.general.ScenePanel;
+import EALiodufiowAMS2.general.layouts.ScenePanel;
 
 import javax.swing.*;
 import java.awt.*;

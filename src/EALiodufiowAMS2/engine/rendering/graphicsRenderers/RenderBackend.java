@@ -1,8 +1,10 @@
 package EALiodufiowAMS2.engine.rendering.graphicsRenderers;
 
 import EALiodufiowAMS2.engine.rendering.DrawCommand;
-import EALiodufiowAMS2.general.Camera;
-import EALiodufiowAMS2.general.Scene;
+import EALiodufiowAMS2.engine.Camera;
+import EALiodufiowAMS2.engine.Scene;
+import EALiodufiowAMS2.engine.rendering.RenderingEngineListener;
+import EALiodufiowAMS2.engine.rendering.RenderingMode;
 
 import java.awt.image.BufferedImage;
 
@@ -13,4 +15,9 @@ public interface RenderBackend {
     void submit(DrawCommand cmd);
     void endFrame();
     BufferedImage getFrameBuffer();
+    RenderingMode getRenderingMode();
+    int getWidth();
+    int getHeight();
+    void setListener(RenderingEngineListener listener);
+    void init();
 }

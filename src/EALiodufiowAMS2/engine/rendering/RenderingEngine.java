@@ -10,8 +10,8 @@ import EALiodufiowAMS2.engine.rendering.renderers.CuboidRenderer;
 import EALiodufiowAMS2.engine.rendering.renderers.GeometryRenderer;
 import EALiodufiowAMS2.engine.rendering.renderingObject.*;
 import EALiodufiowAMS2.engine.rendering.renderingObject.geometries.Geometry;
-import EALiodufiowAMS2.general.Camera;
-import EALiodufiowAMS2.general.Scene;
+import EALiodufiowAMS2.engine.Camera;
+import EALiodufiowAMS2.engine.Scene;
 
 import java.awt.image.BufferedImage;
 import java.util.*;
@@ -41,6 +41,8 @@ import java.util.*;
     */
 
 public final class RenderingEngine {
+    private RenderingEngineListener listener;
+
     private Scene scene;
     private Camera camera;
     private final RenderBackend backend;
@@ -58,6 +60,12 @@ public final class RenderingEngine {
             this.renderView = new CpuRenderView(cpu);
         }
         registerRenderer(new CuboidRenderer());
+
+    }
+
+    public void setListener(RenderingEngineListener listener) {
+        this.listener = listener;
+        this.backend.setListener(listener);
     }
 
     public void setCamera(Camera camera) {
@@ -69,8 +77,17 @@ public final class RenderingEngine {
         this.backend.setScene(scene);
     }
 
-    public void setBufferSize(int w, int h) {
+    public void resize(int w, int h) {
         this.backend.resize(w, h);
+    }
+
+    public RenderingMode getRenderingMode(){ return this.backend.getRenderingMode(); }
+    public int getWidth(){ return this.backend.getWidth(); }
+    public int getHeight(){ return this.backend.getHeight(); }
+
+    public GpuInfo getCurrentGpuInfo() {
+        if (!(this.backend instanceof GpuBackend gpuBackend)) throw new IllegalStateException("Rendering mode has to be GPU in case to get currently used GPU Info");
+        return gpuBackend.getGpuInfo();
     }
 
     public void registerRenderer(GeometryRenderer renderer) {

@@ -3,7 +3,7 @@ package EALiodufiowAMS2.world;
 //import EALiodufiowAMS2.game.vehicle.RailVehicle;
 
 
-public class World { ;
+public class World_DEPRECATED { ;
 //    private final List<RailVehicle> vehicles = new ArrayList<>();
 //
 //    public void addTrack(TrackSegment t) { tracks.add(t); }
@@ -15,7 +15,7 @@ public class World { ;
 
     //private final TrackNetwork layout;
 
-    public World() {
+    public World_DEPRECATED() {
 //        List<TrackSegment> segments = new ArrayList<>();
 //        segments.add(new StraightSegment("straight1", 100));
 //        segments.add(new CurvedSegment("curve1", 50, Math.PI * 25));

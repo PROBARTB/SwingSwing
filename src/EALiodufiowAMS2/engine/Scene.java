@@ -1,4 +1,4 @@
-package EALiodufiowAMS2.general;
+package EALiodufiowAMS2.engine;
 
 import EALiodufiowAMS2.engine.rendering.renderingObject.Material;
 import EALiodufiowAMS2.engine.rendering.renderingObject.RenderingObject;

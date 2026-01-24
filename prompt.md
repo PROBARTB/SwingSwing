@@ -63,3 +63,39 @@ W świecie odstep między szynami ma być stały, dopiero rendering go zmienia. 
 Logika ma być trzemana w world, a scenepanel to tylko kontener gdzie renderujemy na podstawie world. Pętla gry na razie może być oparta na swing Timer.
 
 Napisz pełny kod, nie szkielety. Kod ma być dobry, spełniać założenia projektu, uwzględniać powyższe odpowiedzi na pytania doprecyzowujące. Zastanów się głębiej podczas pisania kodu, ponieważ to duży skomplikowany projekt na którym mi bardzo zależy żeby był dobry.
+
+-----------------------------------------------------------------------------
+Według architektury którą opisałeś, stwórz pełny produkcyjny kod:
+Game
+GamePanel: layout scene paneli, główne metody jak wczytywanie świata (na razie proste tworzenie klasy), scene panele mają działać tylko kiedy są wybrane. Ma zawierać GameplayScenePanel, MainMenuPanel, EditorScenePanel, DebugScenePanel.
+MainMenuPanel: opcje start game, world editor, settings, quit, mniejsza opcja load debug scene.
+CreateGamePanel: konfiguracja gry i świata (na razie tylko przycisk rozpocznij).
+Dodaj ekran ładowania, który przyda się jeśli będziemy później wczytywać world z pliku.
+
+ScenePanel - abstrakcyjna, pola RenderingEngine, RenderView, Camera, SceneData, UiOverlayEngine, paused. Ma posiadać pętlę w której będzie liczyć fps i wywoływać StepAndRender, gdzie bedzie wywoływać abstrakcyjną metodę aktualizacji (zaimplementowaną w konkretnych scenepanelach) i renderingEngine.renderFrame(); renderView.repaintView();. Ma ustawiać overlay fpsów i aktualizować go. Reaguje na zmiany ustawień, w tym RenderingMode reinicjując RenregingEngine i RenderView co ma być wydzielone do metody.
+GameplayScenePanel - przyjmuje GameplayWorld, dodaje własne elementy ui (potem zrobimy jakiś wydzielony ui manager), w tym menu pauzy pod klawiszem Escape. Implementuje metodę aktualizacji gdzie wywołuje world update, pobiera listę RenderingObject z world i ustawia ją w sceneData.setObjects(). Także reaguje na ustawienia
+EditorScenePanel - przyjmuje EditingWorld, reszta analogicznie do GameplayScenePanelu.
+DebugScenePanel - nie ma world, ma Builder builderTest3d = new BuilderTest3d() z którego pobiera listę RenderingObject przy aktualizacji. 
+
+GameplayPauseMenu - ustawiane w overlayu GameplayScenePanel. Zawiera opcje resume, settings, main menu.
+EditorPauseMenu - na razie identyczne jak gameplay pause menu.
+
+Settings - klasa używana wszędzie jako ustawienia z klasami jako sekcje. Zrób mechanizm nasłuchiwania zmian.
+SettingsPanel - używany zarówno w main menu jak i w overlayu pauzy w scene panelach. Ma posiadać zakładki (sekcje) m.in. graphics, gameplay
+Usawienia do implementacj: show fps, fov, RenderingMode (ilość opcji z enuma jeśli rozszerzymy), resolution width x height z presetami qhd fhd hd, fullscreen.
+
+Najprostszy i prymitywny przykład użycia UiOverlayEngine:
+UiOverlay overlay = new UiOverlay();
+UiOverlayLayer testLayer = overlay.getOrCreateLayer("example");
+JButton centerButton = new JButton("Axample");
+centerButton.addActionListener(e -> System.out.println("Example"));
+UiOverlayConstraints buttonConstraints = new UiOverlayConstraints( UiOverlayAnchor.CENTER, 0, 0, null, null, true );
+testLayer.addElement(new UiOverlayElement(centerButton, buttonConstraints));
+this.uiOverlayEngine = new UiOverlayEngine(this);
+uiOverlayEngine.setOverlay(overlay)
+
+Inicjalizacja engine i view:
+this.renderingEngine = new RenderingEngine(resWidth, resHeight, RenderingMode.GPU);
+this.renderView = this.renderingEngine.getRenderView();
+setLayout(new BorderLayout());
+add(renderView.getComponent(), BorderLayout.CENTER);

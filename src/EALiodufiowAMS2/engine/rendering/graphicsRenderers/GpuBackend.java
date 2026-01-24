@@ -1,12 +1,15 @@
 package EALiodufiowAMS2.engine.rendering.graphicsRenderers;
 
+import EALiodufiowAMS2.engine.rendering.GpuInfo;
+import EALiodufiowAMS2.engine.rendering.RenderingEngineListener;
+import EALiodufiowAMS2.engine.rendering.RenderingMode;
 import EALiodufiowAMS2.helpers.Matrix4;
 import EALiodufiowAMS2.helpers.Mesh;
 import EALiodufiowAMS2.helpers.Vertex;
 import EALiodufiowAMS2.engine.rendering.DrawCommand;
 import EALiodufiowAMS2.engine.rendering.renderingObject.Material;
-import EALiodufiowAMS2.general.Camera;
-import EALiodufiowAMS2.general.Scene;
+import EALiodufiowAMS2.engine.Camera;
+import EALiodufiowAMS2.engine.Scene;
 import org.lwjgl.BufferUtils;
 
 import java.awt.image.BufferedImage;
@@ -19,6 +22,8 @@ import static org.lwjgl.opengl.GL33.*;
 
 
 public final class GpuBackend implements RenderBackend {
+    private RenderingEngineListener listener;
+    private GpuInfo gpuInfo;
 
     private int width;
     private int height;
@@ -40,6 +45,23 @@ public final class GpuBackend implements RenderBackend {
         this.shader = new ShaderProgram();
     }
 
+    @Override
+    public void setListener(RenderingEngineListener listener) {
+        this.listener = listener;
+    }
+
+    @Override
+    public RenderingMode getRenderingMode() { return RenderingMode.GPU; }
+    @Override
+    public int getWidth() { return this.width; }
+    @Override
+    public int getHeight() { return this.height; }
+
+    public GpuInfo getGpuInfo() {
+        if(!initialized) throw new IllegalStateException("GpuBackend not initialized");
+        return gpuInfo;
+    }
+    public void setGpuInfo(GpuInfo gpuInfo) { this.gpuInfo = gpuInfo; }
 
     @Override
     public void setScene(Scene scene) {
@@ -87,9 +109,11 @@ public final class GpuBackend implements RenderBackend {
         return img;
     }
 
+    @Override
     public void init() {
         shader.initProgram();
         initialized = true;
+        listener.onBackendInitialized();
     }
 
     public void drawPreparedFrame() {
