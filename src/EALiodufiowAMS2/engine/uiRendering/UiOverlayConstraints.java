@@ -2,14 +2,12 @@ package EALiodufiowAMS2.engine.uiRendering;
 
 import java.util.Objects;
 
-public final class UiOverlayConstraints {
-
-    private final UiOverlayAnchor anchor;
-    private final int offsetX;
-    private final int offsetY;
-    private final Integer width;   // null => preferredSize
-    private final Integer height;  // null => preferredSize
-    private final boolean visible;
+/**
+ * @param width  null => preferredSize
+ * @param height null => preferredSize
+ */
+public record UiOverlayConstraints(UiOverlayAnchor anchor, int offsetX, int offsetY, Integer width, Integer height,
+                                   boolean visible) {
 
     public UiOverlayConstraints(UiOverlayAnchor anchor,
                                 int offsetX,
@@ -23,30 +21,6 @@ public final class UiOverlayConstraints {
         this.width = width;
         this.height = height;
         this.visible = visible;
-    }
-
-    public UiOverlayAnchor getAnchor() {
-        return anchor;
-    }
-
-    public int getOffsetX() {
-        return offsetX;
-    }
-
-    public int getOffsetY() {
-        return offsetY;
-    }
-
-    public Integer getWidth() {
-        return width;
-    }
-
-    public Integer getHeight() {
-        return height;
-    }
-
-    public boolean isVisible() {
-        return visible;
     }
 
     public UiOverlayConstraints withVisibility(boolean visible) {

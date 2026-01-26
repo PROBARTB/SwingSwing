@@ -96,9 +96,11 @@ public final class RenderingEngine {
 
     public void renderFrame() {
         if (scene == null || camera == null) return;
+//        System.out.println("AA" + scene.getObjects());
 
         backend.beginFrame(camera);
         for (RenderingObject obj : scene.getObjects()) {
+//            System.out.println(obj.getTransform().toString());
             Geometry geom = obj.getGeometry();
             GeometryRenderer r = renderers.get(geom.getClass());
             if (r != null) {

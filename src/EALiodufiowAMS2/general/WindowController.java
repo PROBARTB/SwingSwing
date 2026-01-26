@@ -1,13 +1,11 @@
 package EALiodufiowAMS2.general;
 
-import EALiodufiowAMS2.general.settings.GraphicsSettings;
-import EALiodufiowAMS2.general.settings.Settings;
-import EALiodufiowAMS2.general.settings.SettingsListener;
+import EALiodufiowAMS2.general.settings.*;
 
 import javax.swing.*;
 import java.awt.*;
 
-public class FullscreenController implements SettingsListener {
+public class WindowController implements SettingsListener {
 
     private final JFrame frame;
 
@@ -15,7 +13,7 @@ public class FullscreenController implements SettingsListener {
     private DisplayMode previousDisplayMode;
     private Rectangle previousBounds;
 
-    public FullscreenController(JFrame frame) {
+    public WindowController(JFrame frame) {
         this.frame = frame;
     }
 
@@ -23,20 +21,24 @@ public class FullscreenController implements SettingsListener {
     public void onSettingsChanged(Settings newSettings) {
         GraphicsSettings g = newSettings.getGraphics();
 
-        if (g.isFullscreen() != fullscreenActive) {
-            if (g.isFullscreen()) {
-                enterFullscreen(g.getResolutionWidth(), g.getResolutionHeight());
-            } else {
-                exitFullscreen();
-            }
-        } else if (fullscreenActive) {
-            changeFullscreenResolution(g.getResolutionWidth(), g.getResolutionHeight());
-        } else {
-            frame.setSize(g.getResolutionWidth(), g.getResolutionHeight());
-            frame.setLocationRelativeTo(null);
+        WindowMode mode = g.getWindowMode();
+
+        switch (mode) {
+            case FULLSCREEN -> applyFullscreen(g);
+            case BORDERLESS -> applyBorderless(g);
+            case WINDOWED -> applyWindowed(g);
         }
     }
 
+    private void applyFullscreen(GraphicsSettings g) {
+        int width = g.getWindowWidth();
+        int height = g.getWindowHeight();
+        if (!fullscreenActive) {
+            enterFullscreen(width, height);
+        } else {
+            changeFullscreenResolution(width, height);
+        }
+    }
 
     public void enterFullscreen(int width, int height) {
         if (fullscreenActive) return;
@@ -107,7 +109,42 @@ public class FullscreenController implements SettingsListener {
         }
     }
 
-    // --- HELPERS ---
+    private void applyBorderless(GraphicsSettings g) {
+        if (fullscreenActive) {
+            exitFullscreen();
+        }
+
+        frame.dispose();
+        frame.setUndecorated(true);
+        frame.setResizable(false);
+
+        int w = g.getWindowWidth();
+        int h = g.getWindowHeight();
+
+        frame.setSize(w, h);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+
+    private void applyWindowed(GraphicsSettings g) {
+        if (fullscreenActive) {
+            exitFullscreen();
+        }
+
+        frame.dispose();
+        frame.setUndecorated(false);
+
+        boolean fixed = g.getWindowResolutionMode() == ResolutionMode.FIXED;
+        frame.setResizable(!fixed);
+
+        int w = g.getWindowWidth();
+        int h = g.getWindowHeight();
+
+       // frame.setSize(w, h);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+
 
     private GraphicsDevice getBestDevice() {
         GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();

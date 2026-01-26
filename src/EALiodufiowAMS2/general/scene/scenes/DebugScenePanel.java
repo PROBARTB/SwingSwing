@@ -28,11 +28,11 @@ public class DebugScenePanel extends ScenePanel {
         this.builderTest3d = new BuilderTest3D();
 
         this.camera = new Camera(
-                new Vec3(g.getResolutionWidth() / Units.M_TO_PX, g.getResolutionHeight() / Units.M_TO_PX, 0),
+                new Vec3(g.getWindowWidth() / Units.M_TO_PX, g.getWindowHeight() / Units.M_TO_PX, 0),
                 new Vec3(0, 0, -5),
                 new Vec3(Math.toRadians(0), Math.toRadians(0), Math.toRadians(0)),
                 75);
-        this.sceneData = new Scene(new Material(new Color(0xff5c6e7d, true)));
+        this.sceneData = new Scene(new Material(new Color(0xff888888, true)));
 
         Transform staticTransform = new Transform();
         staticTransform.setPos(new Vec3(0, 0, -5));
@@ -51,6 +51,7 @@ public class DebugScenePanel extends ScenePanel {
 
     @Override
     protected void updateScene(double deltaTime) {
+        builderTest3d.update(deltaTime);
         List<RenderingObject> objects = builderTest3d.getRenderingObjects();
         sceneData.setObjects(objects);
     }

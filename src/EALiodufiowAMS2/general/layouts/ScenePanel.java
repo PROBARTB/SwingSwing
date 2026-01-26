@@ -7,10 +7,9 @@ import EALiodufiowAMS2.engine.rendering.RenderingMode;
 import EALiodufiowAMS2.engine.uiRendering.*;
 import EALiodufiowAMS2.general.GameNavigation;
 import EALiodufiowAMS2.general.LayoutContext;
-import EALiodufiowAMS2.general.settings.GraphicsSettings;
-import EALiodufiowAMS2.general.settings.Settings;
-import EALiodufiowAMS2.general.settings.SettingsListener;
-import EALiodufiowAMS2.general.settings.SettingsManager;
+import EALiodufiowAMS2.general.settings.*;
+import EALiodufiowAMS2.general.util.RenderLoop;
+import EALiodufiowAMS2.general.util.RenderLoopListener;
 import EALiodufiowAMS2.helpers.Transform;
 import EALiodufiowAMS2.helpers.Units;
 import EALiodufiowAMS2.helpers.Vec3;
@@ -186,258 +185,582 @@ import java.util.List;
 //    }
 //}
 
+// -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-public abstract class ScenePanel extends JPanel implements SettingsListener {
+//public abstract class ScenePanel extends JPanel implements SettingsListener {
+//
+//    protected final SettingsManager settingsManager;
+//    protected final GameNavigation navigation;
+//
+//    private RenderingEngine renderingEngine;
+//    private RenderView renderView;
+//    private UiOverlayEngine uiOverlayEngine;
+//
+//    protected Camera camera;
+//    protected Scene sceneData;
+//
+//    protected boolean paused = false;
+//
+//    private javax.swing.Timer renderTimer;
+//
+//    private long lastFrameNanos = -1L;
+//    private double fps = 0.0;
+//
+//    private JLabel fpsLabel;
+//    private JLabel gpuInfoLabel;
+//    private JLabel camInfoLabel;
+//
+//    protected ScenePanel(LayoutContext layoutContext) {
+//        this.settingsManager = layoutContext.getSettingsManager();
+//        this.navigation = layoutContext.getNavigation();
+//
+//        setLayout(new BorderLayout());
+//
+//        settingsManager.addListener(this);
+//        initKeyBindings();
+//
+//
+//        addComponentListener(new ComponentAdapter() {
+//            @Override
+//            public void componentResized(ComponentEvent e) {
+//                int w = getWidth();
+//                int h = getHeight();
+//                camera.setSize((double)w / Units.M_TO_PX, (double)h / Units.M_TO_PX);
+//                renderingEngine.resize(w, h);
+//                renderView.repaintView();
+//
+//                System.out.println("ScenePanel resized: " + w + "x" + h);
+//
+//            }
+//        });
+//
+//    }
+//
+//
+//    public void onShown() {
+//        startLoop();
+//    }
+//    public void onHidden() {
+//        stopLoop();
+//        uiOverlayEngine.dispose();
+//    }
+//
+//    public void disposeScene() {
+//        stopLoop();
+//        settingsManager.removeListener(this);
+//        if (renderingEngine != null) {
+//            //renderingEngine.dispose(); nie ma takiej funkcji
+//        }
+//    }
+//
+//
+//    private void startLoop() {
+//        if (renderTimer != null && renderTimer.isRunning()) return;
+//
+//        lastFrameNanos = System.nanoTime();
+//        int delay = 15;
+//
+//        renderTimer = new javax.swing.Timer(delay, e -> {
+//            long now = System.nanoTime();
+//            double delta = (now - lastFrameNanos) / 1_000_000_000.0;
+//            if (delta <= 0) {
+//                lastFrameNanos = now;
+//                return;
+//            }
+//            lastFrameNanos = now;
+//
+//            stepAndRender(delta);
+//            updateFps(delta);
+//            updateFpsOverlay();
+//            updateCamInfoOverlay();
+//        });
+//        renderTimer.setCoalesce(true);
+//        renderTimer.start();
+//    }
+//
+//    private void stopLoop() {
+//        if (renderTimer != null) {
+//            renderTimer.stop();
+//            renderTimer = null;
+//        }
+//    }
+//
+//    private void stepAndRender(double deltaTime) {
+//        if (!paused) {
+//            updateScene(deltaTime);
+//            camera.update();
+//        }
+//        if (renderingEngine != null) {
+//            renderingEngine.renderFrame();
+//        }
+//        if (renderView != null) {
+//            renderView.repaintView();
+//        }
+//    }
+//
+//    private void updateFps(double deltaTime) {
+//        double instant = 1.0 / deltaTime;
+//        fps = fps * 0.9 + instant * 0.1;
+//    }
+//
+//    private void updateFpsOverlay() {
+//        if (fpsLabel != null) {
+//            fpsLabel.setText(String.format("FPS: %.1f", fps));
+//        }
+//    }
+//    private void updateCamInfoOverlay() {
+//        if (camInfoLabel != null && camera != null) {
+//            camInfoLabel.setText("Pos: " + camera.getTransform().toString());
+//        }
+//    }
+//
+//
+//    @Override
+//    public void onSettingsChanged(Settings newSettings) {
+//        GraphicsSettings g = newSettings.getGraphics();
+//        applyGraphicsSettings(g);
+//    }
+//
+//    protected void applyGraphicsSettings(GraphicsSettings g) {
+//        boolean needReinit = false;
+//
+//        if (renderingEngine == null) {
+//            needReinit = true;
+//        } else if (renderingEngine.getRenderingMode() != g.getRenderingMode()) {
+//            needReinit = true;
+//        } else if (renderingEngine.getWidth() != g.getResolutionWidth() || renderingEngine.getHeight() != g.getResolutionHeight()) {
+//            needReinit = true;
+//        }
+//
+//        if (needReinit) {
+//            reinitRenderingEngine(g);
+//        }
+//
+//        if (camera != null) {
+//            if(camera.getFov() != g.getFov()){
+//                camera.setFov(g.getFov());
+//            }
+//            if(camera.getTransform().getSize().x != g.getResolutionWidth() / Units.M_TO_PX || camera.getTransform().getSize().y != g.getResolutionHeight() / Units.M_TO_PX) {
+//                camera.setSize(g.getResolutionWidth() / Units.M_TO_PX, g.getResolutionHeight() / Units.M_TO_PX);
+//            }
+//        }
+//
+//        if (uiOverlayEngine != null && fpsLabel != null) {
+//            fpsLabel.setVisible(g.isShowFps());
+//        }
+//    }
+//
+//    protected void reinitRenderingEngine(GraphicsSettings g) {
+//        //if (renderingEngine != null) renderingEngine.dispose(); nie ma takiej funkcji
+//        if (uiOverlayEngine != null) uiOverlayEngine.dispose();
+//
+//        this.uiOverlayEngine = new UiOverlayEngine(this);
+//
+//        this.renderingEngine = new RenderingEngine(
+//                g.getResolutionWidth(),
+//                g.getResolutionHeight(),
+//                g.getRenderingMode()
+//        );
+//
+//        this.renderingEngine.setListener(new RenderingEngineListener() {
+//            @Override public void onBackendInitialized() {
+//                SwingUtilities.invokeLater(() -> {
+//                    gpuInfoLabel.setText("GPU: " + renderingEngine.getCurrentGpuInfo().renderer());
+//                });
+//            }
+//        });
+//
+//        this.renderView = renderingEngine.getRenderView();
+//
+//        removeAll();
+//        setLayout(new BorderLayout());
+//        add(renderView.getComponent(), BorderLayout.CENTER);
+//
+//        if (sceneData != null) {
+//            System.out.println(sceneData.getObjects());
+//            renderingEngine.setScene(sceneData);
+//        }
+//        renderingEngine.setCamera(camera);
+//
+//        initOverlay(g);
+//
+//        revalidate();
+//        repaint();
+//
+//    }
+//
+//    protected abstract void composeUiOverlay(UiOverlay overlay);
+//
+//    protected void initOverlay(GraphicsSettings g) {
+//        UiOverlay overlay = new UiOverlay();
+//
+//        UiOverlayLayer hudLayer = overlay.getOrCreateLayer("hud");
+//        fpsLabel = new JLabel("FPS: --");
+//        fpsLabel.setForeground(Color.GREEN);
+//        UiOverlayConstraints fpsConstraints = new UiOverlayConstraints(
+//                UiOverlayAnchor.TOP_RIGHT, -10, 10, null, null, true
+//        );
+//        hudLayer.addElement(new UiOverlayElement(fpsLabel, fpsConstraints));
+//        fpsLabel.setVisible(g.isShowFps());
+//
+//        UiOverlayLayer debugInfoLayer = overlay.getOrCreateLayer("debugInfoLayer");
+//        if(renderingEngine != null && renderingEngine.getRenderingMode() == RenderingMode.GPU){
+//            gpuInfoLabel = new JLabel("GPU: --");
+//            gpuInfoLabel.setForeground(Color.WHITE);
+//            UiOverlayConstraints gpuInfoLabelConstraints = new UiOverlayConstraints(
+//                    UiOverlayAnchor.TOP_RIGHT, -10, 50, null, null, true
+//            );
+//            debugInfoLayer.addElement(new UiOverlayElement(gpuInfoLabel, gpuInfoLabelConstraints));
+//            gpuInfoLabel.setVisible(g.isShowDebugInfo());
+//        }
+//
+//        camInfoLabel = new JLabel("Pos: --");
+//        camInfoLabel.setForeground(Color.WHITE);
+//        camInfoLabel.setBackground(new Color(0x000000aa));
+//        UiOverlayConstraints camInfoLabelConstraints = new UiOverlayConstraints(
+//                UiOverlayAnchor.TOP_RIGHT, -10, 20, null, null, true
+//        );
+//        hudLayer.addElement(new UiOverlayElement(camInfoLabel, camInfoLabelConstraints));
+//        camInfoLabel.setVisible(g.isShowDebugInfo());
+//
+//
+//        composeUiOverlay(overlay);
+//
+//        uiOverlayEngine.setOverlay(overlay);
+//    }
+//
+//
+//    protected void setPaused(boolean paused) {
+//        this.paused = paused;
+//        onPauseStateChanged(paused);
+//    }
+//
+//    protected void togglePause() {
+//        setPaused(!paused);
+//    }
+//
+//    protected void onPauseStateChanged(boolean paused) {
+//    }
+//
+//    private void initKeyBindings() {
+//        InputMap im = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+//        ActionMap am = getActionMap();
+//
+//        im.put(KeyStroke.getKeyStroke("ESCAPE"), "togglePause");
+//        am.put("togglePause", new AbstractAction() {
+//            @Override
+//            public void actionPerformed(java.awt.event.ActionEvent e) {
+//                onEscapePressed();
+//            }
+//        });
+//    }
+//
+//    protected void onEscapePressed() {
+//        togglePause();
+//    }
+//
+//
+//    protected abstract void updateScene(double deltaTime);
+//}
 
-    protected final SettingsManager settingsManager;
-    protected final GameNavigation navigation;
+//-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    private RenderingEngine renderingEngine;
-    private RenderView renderView;
-    private UiOverlayEngine uiOverlayEngine;
+ public abstract class ScenePanel extends JPanel implements SettingsListener, RenderLoopListener {
 
-    protected Camera camera;
-    protected Scene sceneData;
+      protected final SettingsManager settingsManager;
+      protected final GameNavigation navigation;
 
-    protected boolean paused = false;
+      private SettingsApplier settingsApplier;
 
-    private javax.swing.Timer renderTimer;
-    private static final int TARGET_FPS = 60;
+      private RenderingEngine renderingEngine;
+      private RenderView renderView;
+      private UiOverlayEngine uiOverlayEngine;
 
-    private long lastFrameNanos = -1L;
-    private double fps = 0.0;
+      protected Camera camera;
+      protected Scene sceneData;
 
-    private JLabel fpsLabel;
-    private JLabel gpuInfoLabel;
+      protected boolean paused = false;
+      private RenderLoop renderLoop;
 
-    protected ScenePanel(LayoutContext layoutContext) {
-        this.settingsManager = layoutContext.getSettingsManager();
-        this.navigation = layoutContext.getNavigation();
+      private UiOverlay overlay;
+      private UiOverlayElement fpsUiOverlayElement;
+      private UiOverlayElement gpuInfoUiOverlayElement;
+      private UiOverlayElement camInfoUiOverlayElement;
 
-        setLayout(new BorderLayout());
+      protected ScenePanel(LayoutContext layoutContext) {
+          this.settingsManager = layoutContext.getSettingsManager();
+          this.navigation = layoutContext.getNavigation();
 
-        settingsManager.addListener(this);
-        initKeyBindings();
+          setLayout(new BorderLayout());
 
-    }
-
-
-    public void onShown() {
-        startLoop();
-    }
-    public void onHidden() {
-        stopLoop();
-        uiOverlayEngine.dispose();
-    }
-
-    public void disposeScene() {
-        stopLoop();
-        settingsManager.removeListener(this);
-        if (renderingEngine != null) {
-            //renderingEngine.dispose(); nie ma takiej funkcji
-        }
-    }
+          settingsManager.addListener(this);
+          initKeyBindings();
 
 
-    private void startLoop() {
-        if (renderTimer != null && renderTimer.isRunning()) return;
+          addComponentListener(new ComponentAdapter() {
+              @Override
+              public void componentResized(ComponentEvent e) {
+                  GraphicsSettings g = settingsManager.getCurrent().getGraphics();
 
-        lastFrameNanos = System.nanoTime();
-        int delay = 1000 / TARGET_FPS;
+                  if (g.getRenderResolutionMode() == ResolutionMode.AUTO) {
+                      int w = getWidth();
+                      int h = getHeight();
 
-        renderTimer = new javax.swing.Timer(delay, e -> {
-            long now = System.nanoTime();
-            double delta = (now - lastFrameNanos) / 1_000_000_000.0;
-            if (delta <= 0) {
-                lastFrameNanos = now;
-                return;
-            }
-            lastFrameNanos = now;
+                      renderingEngine.resize(w, h);
+                      camera.setSize(w / Units.M_TO_PX, h / Units.M_TO_PX);
+                  }
 
-            stepAndRender(delta);
-            updateFps(delta);
-            updateFpsOverlay();
-        });
-        renderTimer.setCoalesce(true);
-        renderTimer.start();
-    }
+                  renderView.repaintView();
+              }
+          });
 
-    private void stopLoop() {
-        if (renderTimer != null) {
-            renderTimer.stop();
-            renderTimer = null;
-        }
-    }
+          this.renderLoop = new RenderLoop(this, 100);
 
-    private void stepAndRender(double deltaTime) {
-        if (!paused) {
-            updateScene(deltaTime);
-        }
-        if (renderingEngine != null) {
-            renderingEngine.renderFrame();
-        }
-        if (renderView != null) {
-            renderView.repaintView();
-        }
-    }
+          this.settingsApplier = new SettingsApplier(this, renderLoop);
 
-    private void updateFps(double deltaTime) {
-        double instant = 1.0 / deltaTime;
-        fps = fps * 0.9 + instant * 0.1;
-    }
 
-    private void updateFpsOverlay() {
-        if (fpsLabel != null) {
-            fpsLabel.setText(String.format("FPS: %.1f", fps));
-        }
-    }
+      }
 
+
+      public void onShown() {
+          if (renderLoop != null && !renderLoop.isRunning()) renderLoop.start();
+          recreateOverlay();
+      }
+      public void onHidden() {
+          if (renderLoop != null && renderLoop.isRunning()) renderLoop.stop();
+          disposeOverlay();
+      }
+      public void dispose() {
+          if (renderLoop != null && renderLoop.isRunning()) renderLoop.stop();
+          settingsManager.removeListener(this);
+          disposeOverlay();
+      }
 
     @Override
     public void onSettingsChanged(Settings newSettings) {
-        GraphicsSettings g = newSettings.getGraphics();
-        applyGraphicsSettings(g);
+        if (settingsApplier != null) settingsApplier.apply(newSettings);
     }
 
-    protected void applyGraphicsSettings(GraphicsSettings g) {
-        boolean needReinit = false;
+      @Override public void onFrame(double deltaTimeSeconds) {
+          stepAndRender(deltaTimeSeconds);
+      }
 
-        if (renderingEngine == null) {
-            needReinit = true;
-        } else if (renderingEngine.getRenderingMode() != g.getRenderingMode()) {
-            needReinit = true;
-        } else if (renderingEngine.getWidth() != g.getResolutionWidth() || renderingEngine.getHeight() != g.getResolutionHeight()) {
-            needReinit = true;
+      private void stepAndRender(double deltaTime) {
+          System.out.println(deltaTime);
+
+          if (!paused) {
+              updateScene(deltaTime);
+              if (camera != null) camera.update();
+          }
+          if (renderingEngine != null) renderingEngine.renderFrame();
+          if (renderView != null) SwingUtilities.invokeLater(renderView::repaintView);
+
+          SwingUtilities.invokeLater(() -> {
+              updateFpsOverlay();
+              updateCamInfoOverlay();
+          });
+      }
+
+      protected void reinitRenderingEngine(GraphicsSettings g) {
+
+          this.renderingEngine = new RenderingEngine(
+                  g.getRenderWidth(),
+                  g.getRenderHeight(),
+                  g.getRenderingMode()
+          );
+
+          this.renderingEngine.setListener(new RenderingEngineListener() {
+              @Override public void onBackendInitialized() {
+                  SwingUtilities.invokeLater(() -> {
+                      ((JLabel) gpuInfoUiOverlayElement.getComponent()).setText("GPU: " + renderingEngine.getCurrentGpuInfo().renderer());
+                      uiOverlayEngine.updateElement(gpuInfoUiOverlayElement);
+                  });
+              }
+          });
+
+          this.renderView = renderingEngine.getRenderView();
+
+          removeAll();
+          setLayout(new BorderLayout());
+          add(renderView.getComponent(), BorderLayout.CENTER);
+
+          if (sceneData != null) renderingEngine.setScene(sceneData);
+          renderingEngine.setCamera(camera);
+
+
+
+          revalidate();
+          repaint();
+
+      }
+
+      private void recreateOverlay() {
+          disposeOverlay();
+          this.uiOverlayEngine = new UiOverlayEngine(this);
+          GraphicsSettings g = settingsManager.getCurrent().getGraphics();
+          UiSettings u = settingsManager.getCurrent().getUi();
+          initOverlay(g, u);
+      }
+      private void disposeOverlay() {
+          if (uiOverlayEngine != null) {
+              uiOverlayEngine.dispose();
+              uiOverlayEngine = null;
+          }
+      }
+
+      protected void initOverlay(GraphicsSettings g, UiSettings u) {
+          overlay = new UiOverlay();
+
+          UiOverlayLayer hudLayer = overlay.getOrCreateLayer("hud");
+          JLabel fpsLabel = new JLabel("FPS: --");
+          fpsLabel.setForeground(Color.GREEN);
+          UiOverlayConstraints fpsConstraints = new UiOverlayConstraints(
+                  UiOverlayAnchor.TOP_RIGHT, -10, 10, null, null, true
+          );
+          fpsUiOverlayElement = new UiOverlayElement(fpsLabel, fpsConstraints);
+          hudLayer.addElement(fpsUiOverlayElement);
+          fpsLabel.setVisible(u.isShowFps());
+
+          UiOverlayLayer debugInfoLayer = overlay.getOrCreateLayer("debugInfoLayer");
+          if(renderingEngine != null && renderingEngine.getRenderingMode() == RenderingMode.GPU){
+              JLabel gpuInfoLabel = new JLabel("GPU: --");
+              gpuInfoLabel.setForeground(Color.WHITE);
+              UiOverlayConstraints gpuInfoLabelConstraints = new UiOverlayConstraints(
+                      UiOverlayAnchor.TOP_RIGHT, -10, 50, null, null, true
+              );
+              gpuInfoUiOverlayElement = new UiOverlayElement(gpuInfoLabel, gpuInfoLabelConstraints);
+              debugInfoLayer.addElement(gpuInfoUiOverlayElement);
+          }
+
+          JLabel camInfoLabel = new JLabel("Cam: --");
+          camInfoLabel.setForeground(Color.WHITE);
+          UiOverlayConstraints camInfoLabelConstraints = new UiOverlayConstraints(
+                  UiOverlayAnchor.TOP_RIGHT, -10, 65, null, null, true
+          );
+          camInfoUiOverlayElement = new UiOverlayElement(camInfoLabel, camInfoLabelConstraints);
+          debugInfoLayer.addElement(camInfoUiOverlayElement);
+          debugInfoLayer.setVisible(u.isShowDebugInfo());
+
+
+          composeUiOverlay(overlay);
+
+          uiOverlayEngine.setOverlay(overlay);
+      }
+
+    private void updateFpsOverlay() {
+        if (fpsUiOverlayElement != null && renderLoop != null) {
+            ((JLabel) fpsUiOverlayElement.getComponent()).setText(String.format("FPS: %.1f", renderLoop.getCurrentFps()));
+            uiOverlayEngine.updateElement(fpsUiOverlayElement);
+        }
+    }
+    private void updateCamInfoOverlay() {
+        if (camInfoUiOverlayElement != null && camera != null) {
+            ((JLabel) camInfoUiOverlayElement.getComponent()).setText("Cam: " + camera.getTransform().toString());
+            uiOverlayEngine.updateElement(camInfoUiOverlayElement);
+        }
+    }
+
+
+      protected void setPaused(boolean paused) {
+          this.paused = paused;
+          onPauseStateChanged(paused);
+      }
+
+      protected void togglePause() {
+          setPaused(!paused);
+      }
+
+      protected void onPauseStateChanged(boolean paused) {
+      }
+
+      private void initKeyBindings() {
+          InputMap im = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+          ActionMap am = getActionMap();
+
+          im.put(KeyStroke.getKeyStroke("ESCAPE"), "togglePause");
+          am.put("togglePause", new AbstractAction() {
+              @Override
+              public void actionPerformed(java.awt.event.ActionEvent e) {
+                  onEscapePressed();
+              }
+          });
+      }
+
+      protected void onEscapePressed() {
+          togglePause();
+      }
+
+
+      protected abstract void updateScene(double deltaTime);
+      protected abstract void composeUiOverlay(UiOverlay overlay);
+
+
+    private final class SettingsApplier {
+
+        private final ScenePanel panel;
+        private final RenderLoop renderLoop;
+
+        public SettingsApplier(ScenePanel panel, RenderLoop renderLoop) {
+            this.panel = panel;
+            this.renderLoop = renderLoop;
         }
 
-        if (needReinit) {
-            reinitRenderingEngine(g);
+        public void apply(Settings newSettings) {
+            GraphicsSettings g = newSettings.getGraphics();
+            UiSettings ui = newSettings.getUi();
+
+            if (requiresReinit(g)) reinitRenderingEngine(g);
+
+            applyResolutionMode(g);
+            applyCameraSettings(g);
+            applyUiSettings(ui);
+            applyFpsLimit(g);
         }
 
-        if (camera != null) {
-            if(camera.getFov() != g.getFov()){
-                camera.setFov(g.getFov());
+        private boolean requiresReinit(GraphicsSettings g) {
+            if (renderingEngine == null) return true;
+
+            if (renderingEngine.getRenderingMode() != g.getRenderingMode()) {
+                return true;
             }
-            if(camera.getTransform().getSize().x != g.getResolutionWidth() / Units.M_TO_PX || camera.getTransform().getSize().y != g.getResolutionHeight() / Units.M_TO_PX) {
-                camera.setSize(g.getResolutionWidth() / Units.M_TO_PX, g.getResolutionHeight() / Units.M_TO_PX);
+
+            if (g.getRenderResolutionMode() == ResolutionMode.FIXED) {
+                if (renderingEngine.getWidth() != g.getRenderWidth() || renderingEngine.getHeight() != g.getRenderHeight()) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void applyResolutionMode(GraphicsSettings g) {
+            if (renderingEngine == null) return;
+            if (g.getRenderResolutionMode() == ResolutionMode.AUTO) renderingEngine.resize(getWidth(), getHeight());
+            else renderingEngine.resize(g.getRenderWidth(), g.getRenderHeight());
+        }
+
+        private void applyCameraSettings(GraphicsSettings g) {
+            Camera cam = camera;
+            if (cam == null) return;
+
+            cam.setFov(g.getFov());
+
+            if (g.getRenderResolutionMode() == ResolutionMode.AUTO) {
+                cam.setSize(getWidth() / Units.M_TO_PX, getHeight() / Units.M_TO_PX);
+            } else {
+                cam.setSize(g.getRenderWidth() / Units.M_TO_PX, g.getRenderHeight() / Units.M_TO_PX);
             }
         }
 
-        if (uiOverlayEngine != null && fpsLabel != null) {
-            fpsLabel.setVisible(g.isShowFps());
-        }
-    }
-
-    protected void reinitRenderingEngine(GraphicsSettings g) {
-        //if (renderingEngine != null) renderingEngine.dispose(); nie ma takiej funkcji
-        if (uiOverlayEngine != null) uiOverlayEngine.dispose();
-
-        this.uiOverlayEngine = new UiOverlayEngine(this);
-
-        this.renderingEngine = new RenderingEngine(
-                g.getResolutionWidth(),
-                g.getResolutionHeight(),
-                g.getRenderingMode()
-        );
-
-        this.renderingEngine.setListener(new RenderingEngineListener() {
-            @Override public void onBackendInitialized() {
-                SwingUtilities.invokeLater(() -> {
-                    System.out.println("EEEE "+ renderingEngine.getCurrentGpuInfo().renderer());
-                    gpuInfoLabel.setText("GPU: " + renderingEngine.getCurrentGpuInfo().renderer());
-                });
+        private void applyUiSettings(UiSettings ui) {
+            if (fpsUiOverlayElement != null) {
+                fpsUiOverlayElement.getComponent().setVisible(ui.isShowFps());
             }
-        });
-
-        this.renderView = renderingEngine.getRenderView();
-
-        removeAll();
-        setLayout(new BorderLayout());
-        add(renderView.getComponent(), BorderLayout.CENTER);
-
-        renderingEngine.setScene(sceneData);
-        renderingEngine.setCamera(camera);
-
-        initOverlay(g);
-
-        revalidate();
-        repaint();
-
-    }
-
-    protected abstract void composeUiOverlay(UiOverlay overlay);
-
-    protected void initOverlay(GraphicsSettings g) {
-        UiOverlay overlay = new UiOverlay();
-
-//        // przykładowa warstwa testowa
-//        UiOverlayLayer testLayer = overlay.getOrCreateLayer("example");
-//        JButton centerButton = new JButton("Example");
-//        centerButton.addActionListener(e -> System.out.println("Example"));
-//        UiOverlayConstraints buttonConstraints = new UiOverlayConstraints(
-//                UiOverlayAnchor.CENTER, 0, 0, null, null, true
-//        );
-//        testLayer.addElement(new UiOverlayElement(centerButton, buttonConstraints));
-
-        UiOverlayLayer hudLayer = overlay.getOrCreateLayer("hud");
-        fpsLabel = new JLabel("FPS: --");
-        fpsLabel.setForeground(Color.GREEN);
-        UiOverlayConstraints fpsConstraints = new UiOverlayConstraints(
-                UiOverlayAnchor.TOP_RIGHT, -10, 10, null, null, true
-        );
-        hudLayer.addElement(new UiOverlayElement(fpsLabel, fpsConstraints));
-        fpsLabel.setVisible(g.isShowFps());
-
-        // !!!!!!!!!!!!!! Nie można teraz wczytać sceny, bo próbujemy pobrać gpu info przed tym jak backend jest initialized.
-        UiOverlayLayer debugInfoLayer = overlay.getOrCreateLayer("debugInfoLayer");
-        if(renderingEngine != null && renderingEngine.getRenderingMode() == RenderingMode.GPU){
-            gpuInfoLabel = new JLabel("GPU: N/A");
-            gpuInfoLabel.setForeground(Color.WHITE);
-            UiOverlayConstraints gpuInfoLabelConstraints = new UiOverlayConstraints(
-                    UiOverlayAnchor.TOP_RIGHT, -10, 50, null, null, true
-            );
-            debugInfoLayer.addElement(new UiOverlayElement(gpuInfoLabel, gpuInfoLabelConstraints));
-            gpuInfoLabel.setVisible(g.isShowDebugInfo());
+            overlay.getLayer("debugInfoLayer").setVisible(ui.isShowDebugInfo());
         }
 
-
-        composeUiOverlay(overlay);
-
-        uiOverlayEngine.setOverlay(overlay);
+        private void applyFpsLimit(GraphicsSettings g) {
+            if (renderLoop != null) renderLoop.setMaxFps(g.getFpsLimit());
+        }
     }
-
-
-    protected void setPaused(boolean paused) {
-        this.paused = paused;
-        onPauseStateChanged(paused);
-    }
-
-    protected void togglePause() {
-        setPaused(!paused);
-    }
-
-    protected void onPauseStateChanged(boolean paused) {
-    }
-
-    private void initKeyBindings() {
-        InputMap im = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
-        ActionMap am = getActionMap();
-
-        im.put(KeyStroke.getKeyStroke("ESCAPE"), "togglePause");
-        am.put("togglePause", new AbstractAction() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                onEscapePressed();
-            }
-        });
-    }
-
-    protected void onEscapePressed() {
-        togglePause();
-    }
-
-
-    protected abstract void updateScene(double deltaTime);
-}
-
-
+  }

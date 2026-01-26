@@ -20,25 +20,32 @@ public class Rasterizer {
     private BufferedImage frameBuffer;
     private double[] zBuffer;
 
-    public Rasterizer(int bufferWidth, int bufferHeight) {
-        setBufferSize(bufferWidth, bufferHeight);
+    public Rasterizer(BufferedImage buffer) {
+        setFrameBuffer(buffer);
     }
 
     public int getBufferWidth() { return bufferWidth; }
     public int getBufferHeight() { return bufferHeight; }
     public BufferedImage getFrameBuffer() { return frameBuffer; }
 
-    /** Ustawia nowy rozmiar bufora */
-    public void setBufferSize(int newWidth, int newHeight) {
-        if (newWidth <= 0 || newHeight <= 0) {
-            throw new IllegalArgumentException("Buffer size must be positive");
-        }
-        this.bufferWidth = newWidth;
-        this.bufferHeight = newHeight;
-        this.frameBuffer = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_ARGB);
-        this.zBuffer = new double[newWidth * newHeight];
-        clearBuffers(0xff000000);
+//    public void setBufferSize(int newWidth, int newHeight) {
+//        if (newWidth <= 0 || newHeight <= 0) {
+//            throw new IllegalArgumentException("Buffer size must be positive");
+//        }
+//        this.bufferWidth = newWidth;
+//        this.bufferHeight = newHeight;
+//        this.frameBuffer = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_ARGB);
+//        this.zBuffer = new double[newWidth * newHeight];
+//        clearBuffers(0xff000000);
+//    }
+
+    public void setFrameBuffer(BufferedImage buffer) {
+        this.frameBuffer = buffer;
+        this.bufferWidth = buffer.getWidth();
+        this.bufferHeight = buffer.getHeight();
+        this.zBuffer = new double[bufferWidth * bufferHeight];
     }
+
 
     /** Czyści bufor koloru i głębokości */
     public void clearBuffers(int argb) {

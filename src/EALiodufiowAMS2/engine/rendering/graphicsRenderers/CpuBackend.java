@@ -22,8 +22,13 @@ public final class CpuBackend implements RenderBackend {
     private Camera camera;
     private Scene scene;
 
+    private BufferedImage frontBuffer;
+    private BufferedImage backBuffer; // double buffering, because rendering is on a separate thread and swing (CpuRenderView) reads in the wrong moment
+    private final Object bufferLock = new Object();
+
     public CpuBackend(int width, int height) {
-        this.rasterizer = new Rasterizer(width, height);
+        setBuffers(width, height);
+        this.rasterizer = new Rasterizer(backBuffer);
     }
 
     @Override
@@ -50,13 +55,21 @@ public final class CpuBackend implements RenderBackend {
 
     @Override
     public void resize(int width, int height) {
-        rasterizer.setBufferSize(width, height);
+        setBuffers(width, height);
     }
 
     @Override
     public void beginFrame(Camera camera) {
         this.camera = camera;
+
+        rasterizer.setFrameBuffer(backBuffer);
         rasterizer.clearBuffers(scene.getVoidMAterial());
+    }
+
+    private void setBuffers(int width, int height) {
+        if (width <= 0 || height <= 0)  throw new IllegalArgumentException("Buffer size must be positive");
+        frontBuffer = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        backBuffer = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
     }
 
     @Override
@@ -84,14 +97,27 @@ public final class CpuBackend implements RenderBackend {
 
     @Override
     public void endFrame() {
-        // nic
+        swapBuffers();
     }
+    public void swapBuffers() {
+        synchronized (bufferLock) {
+            BufferedImage tmp = frontBuffer;
+            frontBuffer = backBuffer;
+            backBuffer = tmp;
+        }
+    }
+
 
     @Override
     public BufferedImage getFrameBuffer() {
-        return rasterizer.getFrameBuffer();
+        synchronized (bufferLock) {
+            return frontBuffer;
+        }
     }
 
+    public Object getBufferLock() {
+        return bufferLock;
+    }
 
     private void transformVertices(
             Vertex[] vertices,
