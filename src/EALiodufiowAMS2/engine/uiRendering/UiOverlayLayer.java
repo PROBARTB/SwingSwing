@@ -5,6 +5,7 @@ import java.util.*;
 public final class UiOverlayLayer {
     private final String id;
     private final List<UiOverlayElement> elements = new ArrayList<>();
+    private boolean visible = true;
 
     public UiOverlayLayer(String id) {
         this.id = id;
@@ -23,6 +24,7 @@ public final class UiOverlayLayer {
 
     public void addElement(UiOverlayElement element) {
         elements.add(Objects.requireNonNull(element, "element"));
+        element.setLayer(this);
     }
 
     public void removeElement(UiOverlayElement element) {
@@ -32,4 +34,7 @@ public final class UiOverlayLayer {
     public void clear() {
         elements.clear();
     }
+
+    public boolean isVisible() { return visible; }
+    public void setVisible(boolean visible) { this.visible = visible; }
 }

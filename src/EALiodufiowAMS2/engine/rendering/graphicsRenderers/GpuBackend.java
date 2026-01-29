@@ -151,7 +151,8 @@ public final class GpuBackend implements RenderBackend {
         shader.setUniformMat4("uView", view);
         shader.setUniformMat4("uProj", proj);
 
-        for (DrawCommand cmd : commands) {
+        // copy the list to prevent concurrent access due to multithreading (paintGL is called from EDT)
+        for (DrawCommand cmd : new ArrayList<>(commands)) {
             Mesh mesh = cmd.getMesh();
             GpuMeshHandle handle = meshCache.computeIfAbsent(mesh, this::uploadMesh);
 

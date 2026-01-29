@@ -33,7 +33,7 @@ public class EditorScenePanel extends ScenePanel {
         GraphicsSettings g = settingsManager.getCurrent().getGraphics();
 
         this.camera = new Camera(
-                new Vec3(g.getResolutionWidth() / Units.M_TO_PX, g.getResolutionHeight() / Units.M_TO_PX, 0),
+                new Vec3(g.getRenderWidth() / Units.M_TO_PX, g.getRenderHeight() / Units.M_TO_PX, 0),
                 new Vec3(0, 0, -5),
                 new Vec3(Math.toRadians(0), Math.toRadians(0), Math.toRadians(0)),
                 75);

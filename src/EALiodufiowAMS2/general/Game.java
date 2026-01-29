@@ -51,14 +51,14 @@ public class Game {
             JFrame frame = new JFrame("SwingSwing");
             frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-            FullscreenController fullscreenController = new FullscreenController(frame);
-            settingsManager.addListener(fullscreenController);
+            WindowController windowController = new WindowController(frame);
+            settingsManager.addListener(windowController);
 
             frame.setLayout(new BorderLayout());
             frame.add(gameController.getPanel(), BorderLayout.CENTER);
             frame.setSize(
-                    settingsManager.getCurrent().getGraphics().getResolutionWidth(),
-                    settingsManager.getCurrent().getGraphics().getResolutionHeight()
+                    settingsManager.getCurrent().getGraphics().getWindowWidth(),
+                    settingsManager.getCurrent().getGraphics().getWindowHeight()
             );
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);

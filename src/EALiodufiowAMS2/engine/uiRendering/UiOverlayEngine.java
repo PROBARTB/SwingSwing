@@ -149,43 +149,85 @@ public class UiOverlayEngine {
         int panelHeight = basePanel.getHeight();
 
         for (UiOverlayLayer layer : overlay.getLayers()) {
+            if (!layer.isVisible()) {
+                for (UiOverlayElement element : layer.getElements()) {
+                    if (element.window != null) {
+                        element.window.setVisible(false);
+                        element.window.dispose();
+                        managedWindows.remove(element.window);
+                        element.window = null;
+                    }
+                }
+                continue;
+            }
+
             for (UiOverlayElement element : layer.getElements()) {
-                UiOverlayConstraints c = element.getConstraints();
+                updateElement(element, panelOnScreen, panelWidth, panelHeight);
+            }
+        }
+    }
 
-                ensureWindowForElement(element);
-                JWindow window = element.window;
-                if (window == null) {
-                    continue;
-                }
+    public void updateElement(UiOverlayElement element) {
+        UiOverlayLayer layer = element.getLayer();
+        if (layer != null && !layer.isVisible()) {
+            if (element.window != null) {
+                element.window.setVisible(false);
+                element.window.dispose();
+                managedWindows.remove(element.window);
+                element.window = null;
+            }
+            return;
+        }
 
-                Dimension preferred = element.getComponent().getPreferredSize();
-                int w = (c.getWidth() != null) ? c.getWidth() : preferred.width;
-                int h = (c.getHeight() != null) ? c.getHeight() : preferred.height;
+        Point panelOnScreen;
+        try {
+            panelOnScreen = basePanel.getLocationOnScreen();
+        } catch (IllegalComponentStateException ex) {
+            return;
+        }
 
-                Point posInPanel = computePositionInPanel(c.getAnchor(), c.getOffsetX(), c.getOffsetY(),
-                        panelWidth, panelHeight, w, h);
+        int panelWidth = basePanel.getWidth();
+        int panelHeight = basePanel.getHeight();
 
-                int xOnScreen = panelOnScreen.x + posInPanel.x;
-                int yOnScreen = panelOnScreen.y + posInPanel.y;
+        updateElement(element, panelOnScreen, panelWidth, panelHeight);
+    }
+    private void updateElement(UiOverlayElement element, Point panelOnScreen, int panelWidth, int panelHeight) {
+        UiOverlayConstraints c = element.getConstraints();
 
-                Rectangle newBounds = new Rectangle(xOnScreen, yOnScreen, w, h);
-                Rectangle oldBounds = window.getBounds();
+        ensureWindowForElement(element);
+        JWindow window = element.window;
+        if (window == null) {
+            return;
+        }
 
-                boolean boundsChanged = !newBounds.equals(oldBounds);
+        Dimension preferred = element.getComponent().getPreferredSize();
+        int w = (c.width() != null) ? c.width() : preferred.width;
+        int h = (c.height() != null) ? c.height() : preferred.height;
 
-                if (boundsChanged) {
-                    window.setBounds(newBounds);
-                }
+        Point posInPanel = computePositionInPanel(c.anchor(), c.offsetX(), c.offsetY(),
+                panelWidth, panelHeight, w, h);
 
-                if (c.isVisible()) {
-                    if (!window.isVisible()) {
-                        window.setVisible(true);
-                    }
-                } else {
-                    if (window.isVisible()) {
-                        window.setVisible(false);
-                    }
-                }
+        int xOnScreen = panelOnScreen.x + posInPanel.x;
+        int yOnScreen = panelOnScreen.y + posInPanel.y;
+
+        Rectangle newBounds = new Rectangle(xOnScreen, yOnScreen, w, h);
+        Rectangle oldBounds = window.getBounds();
+
+        boolean boundsChanged = !newBounds.equals(oldBounds);
+
+        if (boundsChanged) {
+            window.setBounds(newBounds);
+            window.validate();
+            window.repaint();
+        }
+
+        if (c.visible()) {
+            if (!window.isVisible()) {
+                window.setVisible(true);
+            }
+        } else {
+            if (window.isVisible()) {
+                window.setVisible(false);
             }
         }
     }
