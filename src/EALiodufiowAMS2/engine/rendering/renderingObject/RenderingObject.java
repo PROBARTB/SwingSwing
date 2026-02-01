@@ -1,9 +1,8 @@
 package EALiodufiowAMS2.engine.rendering.renderingObject;
 
 import EALiodufiowAMS2.helpers.Transform;
-import EALiodufiowAMS2.engine.rendering.renderingObject.geometries.Geometry;
 
-public final class RenderingObject {
+public class RenderingObject {
     private final Geometry geometry;
     private final Transform transform;
 

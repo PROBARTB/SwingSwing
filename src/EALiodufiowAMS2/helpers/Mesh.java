@@ -1,6 +1,6 @@
 package EALiodufiowAMS2.helpers;
 
-import EALiodufiowAMS2.engine.rendering.renderingObject.FaceType;
+import EALiodufiowAMS2.engine.rendering.renderingObject.objects.cuboid.FaceType;
 
 import java.util.Map;
 

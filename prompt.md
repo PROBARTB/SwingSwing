@@ -99,3 +99,17 @@ this.renderingEngine = new RenderingEngine(resWidth, resHeight, RenderingMode.GP
 this.renderView = this.renderingEngine.getRenderView();
 setLayout(new BorderLayout());
 add(renderView.getComponent(), BorderLayout.CENTER);
+
+
+
+---------------------------------------------------------------------------------
+Używaj Transform(Vec3 pos, Quaternion rot, Vec3 size) nawet tam gdzie nie ma size.
+Doprecyzujmy teraz wszystkie klasy:
+TrackNetwork (graph)
+TrackNode (może być anchored)
+TrackSegment (w grpahie, ma BezierLine/StraightLine/ArcLine extends LineGeometry)
+SwitchTrackSegment extends TrackSegment (trzyma dwa TrackSegment)
+TrackSegmentInstance extends WorldObjectInstance (dodawane do listy wszystkich instancji w świecie)
+SwitchTrackSegmentInstance (jako instancja już nie zawiera dwóch segmentów które teraz są na tym samym poziomie w liście instancji świata, ale może mieć do nich referencje.)
+
+Dla każdej z nich zrób realny szkic (czyli wszystkie pola i metody bez body tylko z komentarzem).

@@ -6,16 +6,24 @@ import java.awt.image.BufferedImage;
 public class Material {
     private final Color color;
     private final BufferedImage texture;
+    private final MaterialBlendMode blendMode;
 
-    public Material(Color color, BufferedImage texture) {
+    public Material(Color color, BufferedImage texture, MaterialBlendMode blendMode) {
         this.color = color;
         this.texture = texture;
+        this.blendMode = blendMode;
+    }
+    public Material(Color color, BufferedImage texture) {
+        this(color, texture, MaterialBlendMode.CUTOUT);
     }
     public Material(Color color) {
-        this.color = color;
-        this.texture = null;
+        this(color, (BufferedImage) null);
+    }
+    public Material(Color color, MaterialBlendMode blendMode) {
+        this(color, null, blendMode);
     }
 
     public Color getColor() { return color; }
     public BufferedImage getTexture() { return texture; }
+    public MaterialBlendMode blendMode() { return blendMode; }
 }

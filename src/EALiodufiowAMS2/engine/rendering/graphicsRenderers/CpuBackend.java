@@ -1,19 +1,17 @@
 package EALiodufiowAMS2.engine.rendering.graphicsRenderers;
 
-import EALiodufiowAMS2.engine.rendering.RenderingEngineListener;
-import EALiodufiowAMS2.engine.rendering.RenderingMode;
+import EALiodufiowAMS2.engine.rendering.*;
 import EALiodufiowAMS2.helpers.Matrix4;
 import EALiodufiowAMS2.helpers.Mesh;
 import EALiodufiowAMS2.helpers.Vec3;
 import EALiodufiowAMS2.helpers.Vertex;
-import EALiodufiowAMS2.engine.rendering.DrawCommand;
-import EALiodufiowAMS2.engine.rendering.Rasterizer;
 import EALiodufiowAMS2.engine.rendering.renderingObject.Material;
 import EALiodufiowAMS2.engine.Camera;
 import EALiodufiowAMS2.engine.Scene;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.util.Map;
 
 public final class CpuBackend implements RenderBackend {
     private RenderingEngineListener listener;
@@ -75,8 +73,8 @@ public final class CpuBackend implements RenderBackend {
     @Override
     public void submit(DrawCommand cmd) {
         Mesh mesh = cmd.getMesh();
-        Mesh.FaceRange range = mesh.getFaceRange(cmd.getFaceType());
-        if (range == null) return;
+        PrimitiveType primitiveType = cmd.getPrimitiveType();
+        Map<Mesh.FaceRange, Material> materialByRange = cmd.getMaterialByRange();
 
         Matrix4 model = cmd.getTransform().toModelMatrix();
         Matrix4 view  = camera.getViewMatrix();
@@ -92,8 +90,28 @@ public final class CpuBackend implements RenderBackend {
         Vec3[] ndcSpace  = new Vec3[vertices.length];
 
         transformVertices(vertices, mv, mvp, viewSpace, ndcSpace);
-        rasterizeMesh(range, indices, vertices, viewSpace, ndcSpace, cmd.getMaterial());
+
+        switch (primitiveType) {
+            case TRIANGLES -> {
+                for (Map.Entry<Mesh.FaceRange, Material> entry : materialByRange.entrySet()) {
+                    Mesh.FaceRange range = entry.getKey();
+                    Material material    = entry.getValue();
+                    if (range == null) continue;
+                    rasterizeMesh(range, indices, vertices, viewSpace, ndcSpace, material);
+                }
+            }
+            case LINES -> {
+                for (Map.Entry<Mesh.FaceRange, Material> entry : materialByRange.entrySet()) {
+                    Mesh.FaceRange range = entry.getKey();
+                    Material material    = entry.getValue();
+                    if (range == null) continue;
+                    rasterizeLines(range, indices, vertices, viewSpace, ndcSpace, material);
+                }
+            }
+            default -> throw new UnsupportedOperationException("Unsupported primitive type: " + primitiveType);
+        }
     }
+
 
     @Override
     public void endFrame() {
@@ -219,4 +237,40 @@ public final class CpuBackend implements RenderBackend {
 
         return new Point2DWithDepth(sx, sy, ndc.z);
     }
+
+    private boolean isLineInFront(Vec3[] viewSpace, int i0, int i1) {
+        return (viewSpace[i0].z < 0.0) || (viewSpace[i1].z < 0.0);
+    }
+
+
+    private void rasterizeLines(
+            Mesh.FaceRange range,
+            int[] indices,
+            Vertex[] vertices,
+            Vec3[] viewSpace,
+            Vec3[] ndcSpace,
+            Material material
+    ) {
+        int w = rasterizer.getBufferWidth();
+        int h = rasterizer.getBufferHeight();
+
+        for (int i = range.startIndex; i < range.startIndex + range.indexCount; i += 2) {
+            int i0 = indices[i];
+            int i1 = indices[i + 1];
+
+            if (!isLineInFront(viewSpace, i0, i1)) continue;
+
+            Point2DWithDepth s0 = projectToScreen(ndcSpace[i0], w, h);
+            Point2DWithDepth s1 = projectToScreen(ndcSpace[i1], w, h);
+
+            if (s0 == null || s1 == null) continue;
+
+            rasterizer.drawStraightLine(
+                    new Point(s0.x, s0.y), -viewSpace[i0].z,
+                    new Point(s1.x, s1.y), -viewSpace[i1].z,
+                    material.getColor()
+            );
+        }
+    }
+
 }

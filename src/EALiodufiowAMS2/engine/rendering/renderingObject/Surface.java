@@ -1,5 +1,7 @@
 package EALiodufiowAMS2.engine.rendering.renderingObject;
 
+import EALiodufiowAMS2.engine.rendering.renderingObject.objects.cuboid.FaceType;
+
 public class Surface {
     private final FaceType type; // e.g. for cuboid: "front", "back", "left", "right", "top", "bottom"
     private final Material material;

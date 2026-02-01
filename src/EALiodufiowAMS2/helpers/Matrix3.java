@@ -13,6 +13,14 @@ public class Matrix3 {
         this.m20 = m20; this.m21 = m21; this.m22 = m22;
     }
 
+    public static Matrix3 fromBasis(Vec3 x, Vec3 y, Vec3 z) {
+        return new Matrix3(
+                x.x, y.x, z.x,
+                x.y, y.y, z.y,
+                x.z, y.z, z.z
+        );
+    }
+
     public static Matrix3 identity() {
         return new Matrix3(
                 1,0,0,

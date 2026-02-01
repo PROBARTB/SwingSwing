@@ -105,6 +105,43 @@ public class Quaternion {
         return new Quaternion(w,x,y,z).normalize();
     }
 
+    public static Quaternion slerp(Quaternion a, Quaternion b, double t) {
+        double dot = a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
+
+        if (dot < 0.0f) {
+            b = new Quaternion(-b.x, -b.y, -b.z, -b.w);
+            dot = -dot;
+        }
+
+        final double DOT_THRESHOLD = 0.9995;
+        if (dot > DOT_THRESHOLD) {
+            Quaternion result = new Quaternion(
+                    a.x + t * (b.x - a.x),
+                    a.y + t * (b.y - a.y),
+                    a.z + t * (b.z - a.z),
+                    a.w + t * (b.w - a.w)
+            );
+            return result.normalize();
+        }
+
+        double theta0 = Math.acos(dot);
+        double theta = theta0 * t;
+
+        double sinTheta = Math.sin(theta);
+        double sinTheta0 = Math.sin(theta0);
+
+        double s0 = Math.cos(theta) - dot * sinTheta / sinTheta0;
+        double s1 = sinTheta / sinTheta0;
+
+        return new Quaternion(
+                (a.x * s0) + (b.x * s1),
+                (a.y * s0) + (b.y * s1),
+                (a.z * s0) + (b.z * s1),
+                (a.w * s0) + (b.w * s1)
+        );
+    }
+
+
     public Vec3 right() { return new Vec3(1,0,0).rotate(this); }
     public Vec3 forward() { return new Vec3(0,0,1).rotate(this); }
     public Vec3 up() { return new Vec3(0,1,0).rotate(this); }

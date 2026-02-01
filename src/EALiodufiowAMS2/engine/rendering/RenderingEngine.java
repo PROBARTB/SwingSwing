@@ -3,13 +3,13 @@ package EALiodufiowAMS2.engine.rendering;
 import EALiodufiowAMS2.engine.rendering.graphicsRenderers.CpuBackend;
 import EALiodufiowAMS2.engine.rendering.graphicsRenderers.GpuBackend;
 import EALiodufiowAMS2.engine.rendering.graphicsRenderers.RenderBackend;
+import EALiodufiowAMS2.engine.rendering.objectRenderers.DefaultRenderingObjectRenderer;
+import EALiodufiowAMS2.engine.rendering.objectRenderers.LineRenderingObjectRenderer;
+import EALiodufiowAMS2.engine.rendering.objectRenderers.RenderingObjectRenderer;
 import EALiodufiowAMS2.engine.rendering.renderViews.CpuRenderView;
 import EALiodufiowAMS2.engine.rendering.renderViews.GpuRenderView;
 import EALiodufiowAMS2.engine.rendering.renderViews.RenderView;
-import EALiodufiowAMS2.engine.rendering.renderers.CuboidRenderer;
-import EALiodufiowAMS2.engine.rendering.renderers.GeometryRenderer;
 import EALiodufiowAMS2.engine.rendering.renderingObject.*;
-import EALiodufiowAMS2.engine.rendering.renderingObject.geometries.Geometry;
 import EALiodufiowAMS2.engine.Camera;
 import EALiodufiowAMS2.engine.Scene;
 
@@ -47,7 +47,8 @@ public final class RenderingEngine {
     private Camera camera;
     private final RenderBackend backend;
     private final RenderView renderView;
-    private final Map<Class<? extends Geometry>, GeometryRenderer> renderers = new HashMap<>();
+
+    private final Map<Class<? extends RenderingObject>, RenderingObjectRenderer> objectRenderers = new HashMap<>();
 
     public RenderingEngine(int resWidth, int resHeight, RenderingMode renderingMode) {
         if (renderingMode == RenderingMode.GPU) {
@@ -59,8 +60,12 @@ public final class RenderingEngine {
             this.backend = cpu;
             this.renderView = new CpuRenderView(cpu);
         }
-        registerRenderer(new CuboidRenderer());
 
+        DefaultRenderingObjectRenderer defaultRenderer = new DefaultRenderingObjectRenderer();
+        LineRenderingObjectRenderer lineRenderer = new LineRenderingObjectRenderer(defaultRenderer);
+
+        registerRenderer(defaultRenderer);
+        registerRenderer(lineRenderer);
     }
 
     public void setListener(RenderingEngineListener listener) {
@@ -81,31 +86,58 @@ public final class RenderingEngine {
         this.backend.resize(w, h);
     }
 
-    public RenderingMode getRenderingMode(){ return this.backend.getRenderingMode(); }
-    public int getWidth(){ return this.backend.getWidth(); }
-    public int getHeight(){ return this.backend.getHeight(); }
+    public RenderingMode getRenderingMode() {
+        return this.backend.getRenderingMode();
+    }
+
+    public int getWidth() {
+        return this.backend.getWidth();
+    }
+
+    public int getHeight() {
+        return this.backend.getHeight();
+    }
 
     public GpuInfo getCurrentGpuInfo() {
-        if (!(this.backend instanceof GpuBackend gpuBackend)) throw new IllegalStateException("Rendering mode has to be GPU in case to get currently used GPU Info");
+        if (!(this.backend instanceof GpuBackend gpuBackend))
+            throw new IllegalStateException("Rendering mode has to be GPU in case to get currently used GPU Info");
         return gpuBackend.getGpuInfo();
     }
 
-    public void registerRenderer(GeometryRenderer renderer) {
-        renderers.put(renderer.getSupportedGeometry(), renderer);
+    public void registerRenderer(RenderingObjectRenderer renderer) {
+        objectRenderers.put(renderer.getSupportedType(), renderer);
+    }
+
+    private RenderingObjectRenderer findRendererFor(RenderingObject obj) {
+        Class<?> cls = obj.getClass();
+        // najpierw próbujemy dokładny typ
+        RenderingObjectRenderer r = objectRenderers.get(cls);
+        if (r != null) return r;
+
+        // fallback – szukamy rendererów dla nadtypów (np. RenderingObject.class)
+        for (Map.Entry<Class<? extends RenderingObject>, RenderingObjectRenderer> e : objectRenderers.entrySet()) {
+            if (e.getKey().isAssignableFrom(cls)) {
+                return e.getValue();
+            }
+        }
+        return null;
     }
 
     public void renderFrame() {
         if (scene == null || camera == null) return;
-//        System.out.println("AA" + scene.getObjects());
+
+        List<DrawCommand> commands = new ArrayList<>();
+
+        for (RenderingObject obj : scene.getObjects()) {
+            RenderingObjectRenderer renderer = findRendererFor(obj);
+            if (renderer != null) {
+                renderer.buildDrawCommands(backend, obj, commands);
+            }
+        }
 
         backend.beginFrame(camera);
-        for (RenderingObject obj : scene.getObjects()) {
-//            System.out.println(obj.getTransform().toString());
-            Geometry geom = obj.getGeometry();
-            GeometryRenderer r = renderers.get(geom.getClass());
-            if (r != null) {
-                r.render(backend, obj);
-            }
+        for (DrawCommand cmd : commands) {
+            backend.submit(cmd);
         }
         backend.endFrame();
     }
@@ -114,5 +146,7 @@ public final class RenderingEngine {
         return renderView;
     }
 
-    public BufferedImage getFrameSnapshot() { return backend.getFrameBuffer(); } // should only be used for occasional fetching
+    public BufferedImage getFrameSnapshot() {
+        return backend.getFrameBuffer();
+    } // should only be used for occasional fetching
 }

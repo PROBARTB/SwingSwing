@@ -61,6 +61,15 @@ public class Vec3 {
         return new Vec3(result.x, result.y, result.z);
     }
 
+    public Vec3 lerp(Vec3 other, double t) {
+        return new Vec3(
+                this.x + (other.x - this.x) * t,
+                this.y + (other.y - this.y) * t,
+                this.z + (other.z - this.z) * t
+        );
+    }
+
+
     @Override
     public String toString() {
         return String.format("Vec3(%.3f, %.3f, %.3f)", x, y, z);

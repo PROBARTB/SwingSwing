@@ -8,12 +8,12 @@ public class Transform {
     private Vec3 size;
 
     public Transform() {
-        this(new Vec3(0,0,0), Quaternion.identity(), new Vec3(1,1,1));
+        this(new Vec3(0,0,0), Quaternion.identity(), new Vec3(0,0,0));
     }
     public Transform(Vec3 size) {
         this(new Vec3(0,0,0), Quaternion.identity(), size);
     }
-    public Transform(Vec3 pos, Quaternion rot) { this(pos, rot, null); }
+    public Transform(Vec3 pos, Quaternion rot) { this(pos, rot, new Vec3(0,0,0)); }
     public Transform(Vec3 pos, Quaternion rot, Vec3 size) {
         this.pos = pos;
         this.rot = rot;

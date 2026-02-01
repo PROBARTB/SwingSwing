@@ -1,11 +1,11 @@
 package EALiodufiowAMS2.general.world;
 
-import EALiodufiowAMS2.engine.rendering.renderingObject.FaceType;
+import EALiodufiowAMS2.engine.rendering.renderingObject.objects.cuboid.FaceType;
 import EALiodufiowAMS2.engine.rendering.renderingObject.Material;
 import EALiodufiowAMS2.engine.rendering.renderingObject.RenderingObject;
 import EALiodufiowAMS2.engine.rendering.renderingObject.Surface;
-import EALiodufiowAMS2.engine.rendering.renderingObject.geometries.CuboidGeometry;
-import EALiodufiowAMS2.engine.rendering.renderingObject.geometries.Geometry;
+import EALiodufiowAMS2.engine.rendering.renderingObject.objects.cuboid.CuboidGeometry;
+import EALiodufiowAMS2.engine.rendering.renderingObject.Geometry;
 import EALiodufiowAMS2.helpers.Quaternion;
 import EALiodufiowAMS2.helpers.Transform;
 import EALiodufiowAMS2.helpers.Vec3;

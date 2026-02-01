@@ -1,12 +1,11 @@
 package EALiodufiowAMS2.engine.rendering.graphicsRenderers;
 
-import EALiodufiowAMS2.engine.rendering.GpuInfo;
-import EALiodufiowAMS2.engine.rendering.RenderingEngineListener;
-import EALiodufiowAMS2.engine.rendering.RenderingMode;
+import EALiodufiowAMS2.engine.rendering.*;
+import EALiodufiowAMS2.engine.rendering.renderingObject.MaterialBlendMode;
 import EALiodufiowAMS2.helpers.Matrix4;
 import EALiodufiowAMS2.helpers.Mesh;
+import EALiodufiowAMS2.helpers.Vec3;
 import EALiodufiowAMS2.helpers.Vertex;
-import EALiodufiowAMS2.engine.rendering.DrawCommand;
 import EALiodufiowAMS2.engine.rendering.renderingObject.Material;
 import EALiodufiowAMS2.engine.Camera;
 import EALiodufiowAMS2.engine.Scene;
@@ -116,6 +115,9 @@ public final class GpuBackend implements RenderBackend {
         listener.onBackendInitialized();
     }
 
+    private final List<DrawCommand> opaqueCommands = new ArrayList<>();
+    private final List<DrawCommand> transparentCommands = new ArrayList<>();
+
     public void drawPreparedFrame() {
         if (camera == null || scene == null) {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -151,29 +153,79 @@ public final class GpuBackend implements RenderBackend {
         shader.setUniformMat4("uView", view);
         shader.setUniformMat4("uProj", proj);
 
+
+        opaqueCommands.clear();
+        transparentCommands.clear();
+
         // copy the list to prevent concurrent access due to multithreading (paintGL is called from EDT)
         for (DrawCommand cmd : new ArrayList<>(commands)) {
-            Mesh mesh = cmd.getMesh();
-            GpuMeshHandle handle = meshCache.computeIfAbsent(mesh, this::uploadMesh);
+            //System.out.println(cmd.getTransform().toString());
+            boolean isTransparent = cmd.getMaterialByRange().values().stream().anyMatch((m) -> m.blendMode() == MaterialBlendMode.TRANSPARENT);
+            (isTransparent ? transparentCommands : opaqueCommands).add(cmd);
+        }
 
-            // model matrix
-            Matrix4 model = cmd.getTransform().toModelMatrix();
-            shader.setUniformMat4("uModel", model);
+        glDepthMask(true);
+        for (DrawCommand cmd : opaqueCommands) {
+            drawCommand(cmd);
+        }
 
-            // materiał
-            Material mat = cmd.getMaterial();
+        transparentCommands.sort(Comparator.comparingDouble(this::depthKey));
+        glDepthMask(false);
+        for (DrawCommand cmd : transparentCommands) {
+            drawCommand(cmd);
+        }
+
+        glDepthMask(true);
+
+        glBindVertexArray(0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        shader.unbind();
+    }
+
+    private double depthKey(DrawCommand cmd) {
+        Vec3 worldPos = cmd.getTransform().getPos();
+        Vec3 camPos   = camera.getTransform().getPos();
+        //return worldPos.sub(camPos).lengthSquared();
+        return -worldPos.sub(camPos).z;
+    }
+
+
+    private void drawCommand(DrawCommand cmd) {
+        Mesh mesh = cmd.getMesh();
+        GpuMeshHandle handle = meshCache.computeIfAbsent(mesh, this::uploadMesh);
+
+        // model matrix
+        Matrix4 model = cmd.getTransform().toModelMatrix();
+        shader.setUniformMat4("uModel", model);
+
+        PrimitiveType primitiveType = cmd.getPrimitiveType();
+        Map<Mesh.FaceRange, Material> materialByRange = cmd.getMaterialByRange();
+
+        glBindVertexArray(handle.vaoId);
+
+        int glMode = switch (primitiveType) {
+            case TRIANGLES -> GL_TRIANGLES;
+            case LINES     -> GL_LINES;
+            default        -> throw new UnsupportedOperationException("Unsupported primitive type: " + primitiveType);
+        };
+
+        for (Map.Entry<Mesh.FaceRange, Material> entry : materialByRange.entrySet()) {
+            Mesh.FaceRange range = entry.getKey();
+            Material mat         = entry.getValue();
+            if (range == null || mat == null) continue;
+
+            // dla krawędzi używamy tylko koloru, tekstura tylko dla trójkątów
+            boolean useTexture = (primitiveType == PrimitiveType.TRIANGLES) && (mat.getTexture() != null);
             int texId = 0;
-            boolean hasTexture = false;
 
-            if (mat.getTexture() != null) {
+            if (useTexture) {
                 texId = textureCache.computeIfAbsent(mat.getTexture(), this::uploadTexture);
-                hasTexture = true;
             }
 
             shader.setUniformVec4("uColor", mat.getColor());
-            shader.setUniformInt("uUseTexture", hasTexture ? 1 : 0);
+            shader.setUniformInt("uUseTexture", useTexture ? 1 : 0);
 
-            if (hasTexture) {
+            if (useTexture) {
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, texId);
                 shader.setUniformInt("uTexture", 0);
@@ -181,18 +233,13 @@ public final class GpuBackend implements RenderBackend {
                 glBindTexture(GL_TEXTURE_2D, 0);
             }
 
-            glBindVertexArray(handle.vaoId);
-
-            Mesh.FaceRange range = mesh.getFaceRange(cmd.getFaceType());
-            if (range != null) {
-                glDrawElements(GL_TRIANGLES, range.indexCount, GL_UNSIGNED_INT,
-                        (long) range.startIndex * Integer.BYTES);
-            }
+            glDrawElements(
+                    glMode,
+                    range.indexCount,
+                    GL_UNSIGNED_INT,
+                    (long) range.startIndex * Integer.BYTES
+            );
         }
-
-        glBindVertexArray(0);
-        glBindTexture(GL_TEXTURE_2D, 0);
-        shader.unbind();
     }
 
     public void dispose() {
