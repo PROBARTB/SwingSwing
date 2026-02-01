@@ -38,6 +38,7 @@ public class Vec3 {
     public double length() {
         return Math.sqrt(x*x + y*y + z*z);
     }
+    public double lengthSquared() { return x * x + y * y + z * z; }
 
     public Vec3 normalize() {
         double len = length();

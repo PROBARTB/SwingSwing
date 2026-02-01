@@ -1,12 +1,10 @@
 package EALiodufiowAMS2.engine.rendering.geometryRenderer.geometryRenderers.line;
 
 
-import EALiodufiowAMS2.engine.rendering.renderingObject.objects.cuboid.FaceType;
+import EALiodufiowAMS2.engine.rendering.PrimitiveType;
+import EALiodufiowAMS2.engine.rendering.renderingObject.FaceType;
 import EALiodufiowAMS2.engine.rendering.renderingObject.objects.line.lines.StraightLineGeometry;
-import EALiodufiowAMS2.helpers.Mesh;
-import EALiodufiowAMS2.helpers.Transform;
-import EALiodufiowAMS2.helpers.Vec3;
-import EALiodufiowAMS2.helpers.Vertex;
+import EALiodufiowAMS2.helpers.*;
 
 import java.util.Collections;
 import java.util.List;
@@ -32,8 +30,14 @@ public final class StraightLineGeometryRenderer implements LineGeometryRenderer<
         Vertex[] vertices = new Vertex[]{v0, v1};
         int[] indices = new int[]{0, 1};
 
-        Map<FaceType, Mesh.FaceRange> emptyRanges = Collections.emptyMap();
-        Mesh lineMesh = new Mesh(vertices, indices, emptyRanges);
+        Mesh.SubMesh subMesh = new Mesh.SubMesh(
+                0,
+                2,
+                PrimitiveType.LINES,
+                0,      // materialSlot
+                BoundingBox.empty()
+        );
+        Mesh lineMesh = new Mesh(vertices, indices, List.of(subMesh));
 
         List<Vec3> polyline = List.of(p0, p1);
         double length = p1.sub(p0).length();

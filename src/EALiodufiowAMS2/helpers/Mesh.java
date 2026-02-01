@@ -1,34 +1,44 @@
 package EALiodufiowAMS2.helpers;
 
-import EALiodufiowAMS2.engine.rendering.renderingObject.objects.cuboid.FaceType;
+import EALiodufiowAMS2.engine.rendering.PrimitiveType;
 
-import java.util.Map;
+import java.util.List;
+import java.util.Objects;
 
 public final class Mesh {
-    private final Vertex[] vertices;
-    private final int[] indices;
 
-    public static final class FaceRange {
-        public final FaceType faceType;
-        public final int startIndex; // offset w indices
-        public final int indexCount;
+    public static final class SubMesh {
+        public final int indexOffset;     // offset w indices (w indeksach, nie bajtach)
+        public final int indexCount;      // ile indeksów należy do tego submesha
+        public final PrimitiveType primitiveType;
+        public final int materialSlot;    // indeks slotu materiału
+        public final BoundingBox bounds;  // opcjonalnie: bounding box submesha
 
-        public FaceRange(FaceType faceType, int startIndex, int indexCount) {
-            this.faceType = faceType;
-            this.startIndex = startIndex;
-            this.indexCount = indexCount;
+        public SubMesh(int indexOffset,
+                       int indexCount,
+                       PrimitiveType primitiveType,
+                       int materialSlot,
+                       BoundingBox bounds) {
+            this.indexOffset   = indexOffset;
+            this.indexCount    = indexCount;
+            this.primitiveType = primitiveType;
+            this.materialSlot  = materialSlot;
+            this.bounds        = Objects.requireNonNull(bounds);
         }
     }
 
-    private final Map<FaceType, FaceRange> faceRanges;
+    private final Vertex[] vertices;
+    private final int[] indices;
+    private final List<SubMesh> subMeshes;
 
-    public Mesh(Vertex[] vertices, int[] indices, Map<FaceType, FaceRange> faceRanges) {
+    public Mesh(Vertex[] vertices, int[] indices, List<SubMesh> subMeshes) {
         this.vertices = vertices;
         this.indices = indices;
-        this.faceRanges = Map.copyOf(faceRanges);
+        this.subMeshes = List.copyOf(subMeshes);
     }
 
     public Vertex[] getVertices() { return vertices; }
     public int[] getIndices() { return indices; }
-    public FaceRange getFaceRange(FaceType type) { return faceRanges.get(type); }
+    public List<SubMesh> getSubMeshes() { return subMeshes; }
+
 }

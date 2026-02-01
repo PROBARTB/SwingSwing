@@ -10,30 +10,29 @@ import java.util.Map;
 
 public final class CuboidGeometry implements Geometry, SurfaceGeometry {
 
-    private final List<Surface> surfaces;
-    private final Map<FaceType, Material> materialByFace;
+    private final List<CuboidSurface> surfaces;
+    private final Map<CuboidFaceType, Material> materialByFace;
 
-    public CuboidGeometry(List<Surface> surfaces) {
+    public CuboidGeometry(List<CuboidSurface> surfaces) {
         if (surfaces == null || surfaces.isEmpty()) {
             throw new IllegalArgumentException("CuboidGeometry requires at least one surface");
         }
-
         this.surfaces = List.copyOf(surfaces);
 
-        Map<FaceType, Material> map = new EnumMap<>(FaceType.class);
-        for (Surface s : surfaces) {
+        Map<CuboidFaceType, Material> map = new EnumMap<>(CuboidFaceType.class);
+        for (CuboidSurface s : surfaces) {
             map.put(s.getType(), s.getMaterial());
         }
         this.materialByFace = Map.copyOf(map);
     }
 
-    public List<Surface> getSurfaces() {
+    public List<CuboidSurface> getSurfaces() {
         return surfaces;
     }
 
     @Override
     public Material getMaterialForSurface(Object surfaceId) {
-        if (surfaceId instanceof FaceType faceType) {
+        if (surfaceId instanceof CuboidFaceType faceType) {
             return materialByFace.get(faceType);
         }
         return null;

@@ -1,12 +1,12 @@
 package EALiodufiowAMS2.game.builders;
 
+import EALiodufiowAMS2.engine.rendering.renderingObject.objects.cuboid.CuboidFaceType;
+import EALiodufiowAMS2.engine.rendering.renderingObject.objects.cuboid.CuboidSurface;
 import EALiodufiowAMS2.engine.rendering.renderingObject.objects.line.FillMode;
 import EALiodufiowAMS2.engine.rendering.renderingObject.objects.line.Line;
 import EALiodufiowAMS2.engine.rendering.renderingObject.objects.line.LineGeometry;
 import EALiodufiowAMS2.engine.rendering.renderingObject.objects.line.lines.StraightLineGeometry;
 import EALiodufiowAMS2.helpers.*;
-import EALiodufiowAMS2.engine.rendering.renderingObject.objects.cuboid.FaceType;
-import EALiodufiowAMS2.engine.rendering.renderingObject.Surface;
 import EALiodufiowAMS2.engine.rendering.TextureManager;
 import EALiodufiowAMS2.engine.rendering.renderingObject.*;
 import EALiodufiowAMS2.engine.rendering.renderingObject.objects.cuboid.CuboidGeometry;
@@ -19,30 +19,29 @@ public class BuilderTest3D implements Builder {
     private final Map<String, RenderingObject> objects = new HashMap<>();
 
     public BuilderTest3D() {
-        // wspólne tekstury dla przykładu
-        List<Surface> surfaces = new ArrayList<>();
-        surfaces.add(new Surface(FaceType.FRONT, new Material(Color.RED, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"))));
-        surfaces.add(new Surface(FaceType.BACK, new Material(Color.GREEN, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"))));
-        surfaces.add(new Surface(FaceType.TOP, new Material(Color.BLUE, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"))));
-        surfaces.add(new Surface(FaceType.BOTTOM, new Material(Color.YELLOW, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"))));
-        surfaces.add(new Surface(FaceType.LEFT, new Material(Color.CYAN, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"))));
-        surfaces.add(new Surface(FaceType.RIGHT, new Material(Color.MAGENTA, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"))));
+        List<CuboidSurface> surfaces = new ArrayList<>();
+        surfaces.add(new CuboidSurface(CuboidFaceType.FRONT, new Material(Color.RED, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"))));
+        surfaces.add(new CuboidSurface(CuboidFaceType.BACK, new Material(Color.GREEN, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"))));
+        surfaces.add(new CuboidSurface(CuboidFaceType.TOP, new Material(Color.BLUE, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"))));
+        surfaces.add(new CuboidSurface(CuboidFaceType.BOTTOM, new Material(Color.YELLOW, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"))));
+        surfaces.add(new CuboidSurface(CuboidFaceType.LEFT, new Material(Color.CYAN, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"))));
+        surfaces.add(new CuboidSurface(CuboidFaceType.RIGHT, new Material(Color.MAGENTA, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"))));
 
-        List<Surface> surfacesColors = new ArrayList<>();
-        surfacesColors.add(new Surface(FaceType.FRONT, new Material(new Color(0xffff0000, true))));
-        surfacesColors.add(new Surface(FaceType.BACK, new Material(Color.GREEN)));
-        surfacesColors.add(new Surface(FaceType.TOP, new Material(Color.BLUE)));
-        surfacesColors.add(new Surface(FaceType.BOTTOM, new Material(Color.YELLOW)));
-        surfacesColors.add(new Surface(FaceType.LEFT, new Material(new Color(0xFF00FFFF, true))));
-        surfacesColors.add(new Surface(FaceType.RIGHT, new Material(Color.MAGENTA)));
+        List<CuboidSurface> surfacesColors = new ArrayList<>();
+        surfacesColors.add(new CuboidSurface(CuboidFaceType.FRONT, new Material(new Color(0xffff0000, true))));
+        surfacesColors.add(new CuboidSurface(CuboidFaceType.BACK, new Material(Color.GREEN)));
+        surfacesColors.add(new CuboidSurface(CuboidFaceType.TOP, new Material(Color.BLUE)));
+        surfacesColors.add(new CuboidSurface(CuboidFaceType.BOTTOM, new Material(Color.YELLOW)));
+        surfacesColors.add(new CuboidSurface(CuboidFaceType.LEFT, new Material(new Color(0xFF00FFFF, true))));
+        surfacesColors.add(new CuboidSurface(CuboidFaceType.RIGHT, new Material(Color.MAGENTA)));
 
-        List<Surface> surfacesAlpha = new ArrayList<>();
-        surfacesAlpha.add(new Surface(FaceType.FRONT, new Material(Color.RED, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na.png"))));
-        surfacesAlpha.add(new Surface(FaceType.BACK, new Material(new Color(0x884BD51C, true))));
-        surfacesAlpha.add(new Surface(FaceType.TOP, new Material(Color.BLUE)));
-        surfacesAlpha.add(new Surface(FaceType.BOTTOM, new Material(new Color(0x54FFFB00, true))));
-        surfacesAlpha.add(new Surface(FaceType.LEFT, new Material(new Color(0xA300F7FF, true))));
-        surfacesAlpha.add(new Surface(FaceType.RIGHT, new Material(new Color(0x27D380D5, true))));
+        List<CuboidSurface> surfacesAlpha = new ArrayList<>();
+        surfacesAlpha.add(new CuboidSurface(CuboidFaceType.FRONT, new Material(Color.RED, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na.png"))));
+        surfacesAlpha.add(new CuboidSurface(CuboidFaceType.BACK, new Material(new Color(0x884BD51C, true))));
+        surfacesAlpha.add(new CuboidSurface(CuboidFaceType.TOP, new Material(Color.BLUE)));
+        surfacesAlpha.add(new CuboidSurface(CuboidFaceType.BOTTOM, new Material(new Color(0x54FFFB00, true))));
+        surfacesAlpha.add(new CuboidSurface(CuboidFaceType.LEFT, new Material(new Color(0xA300F7FF, true))));
+        surfacesAlpha.add(new CuboidSurface(CuboidFaceType.RIGHT, new Material(new Color(0x27D380D5, true))));
 
         Geometry cubeGeoTextured = new CuboidGeometry(surfaces);
         Transform t1 = new Transform();
@@ -75,7 +74,7 @@ public class BuilderTest3D implements Builder {
         Line testLine = new Line(testLineGeo, null, tlpos, FillMode.STRETCH, new Color(0xffffffff, true));
         objects.put("testLine", testLine);
 
-//        Surface s1 = new Surface(FaceType.FRONT, TextureManager.getTexture("assets\\texture.png"), Color.PINK);
+//        CuboidSurface s1 = new CuboidSurface(CuboidFaceType.FRONT, TextureManager.getTexture("assets\\texture.png"), Color.PINK);
 //        Rectangle rect1 = new Rectangle(new Transform(), s1);
 //        rect1.getTransform().setPos(new Vec3(0, 0, 7));
 //        rect1.getTransform().setSize(new Vec3(14, 2, 0));
