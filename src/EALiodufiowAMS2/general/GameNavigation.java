@@ -12,6 +12,6 @@ public interface GameNavigation {
     void startGameWithConfig(GameplaySceneConfig config);
     void startEditorWithConfig(EditorSceneConfig config);
     void loadDebugScene();
-
+    void loadPiotrostalScene();
     void returnToMainMenu();
 }
