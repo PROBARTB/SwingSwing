@@ -70,7 +70,42 @@ public class Rasterizer {
         Arrays.fill(zBuffer, Double.POSITIVE_INFINITY);
     }
 
+//    private void fillWithTexture(int[] pixels, BufferedImage texture) {
+//        int w = frameBuffer.getWidth();
+//        int h = frameBuffer.getHeight();
+//
+//        int texW = texture.getWidth();
+//        int texH = texture.getHeight();
+//
+//        int[] texPixels = ((DataBufferInt) texture.getRaster().getDataBuffer()).getData();
+//
+//        for (int y = 0; y < h; y++) {
+//            int ty = y % texH;
+//            for (int x = 0; x < w; x++) {
+//                int tx = x % texW;
+//                pixels[y * w + x] = texPixels[ty * texW + tx];
+//            }
+//        }
+//    }
+
     private void fillWithTexture(int[] pixels, BufferedImage texture) {
+        // Upewniamy się, że tekstura ma bufor INT
+        if (texture.getType() != BufferedImage.TYPE_INT_ARGB &&
+                texture.getType() != BufferedImage.TYPE_INT_RGB) {
+
+            BufferedImage converted = new BufferedImage(
+                    texture.getWidth(),
+                    texture.getHeight(),
+                    BufferedImage.TYPE_INT_ARGB
+            );
+
+            Graphics2D g = converted.createGraphics();
+            g.drawImage(texture, 0, 0, null);
+            g.dispose();
+
+            texture = converted;
+        }
+
         int w = frameBuffer.getWidth();
         int h = frameBuffer.getHeight();
 
@@ -87,6 +122,7 @@ public class Rasterizer {
             }
         }
     }
+
 
 
 

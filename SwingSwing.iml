@@ -31,5 +31,18 @@
         <jarDirectory url="file://$USER_HOME$/Downloads/java open gl pain/lwjgl-release-3.3.6-custom" recursive="false" type="SOURCES" />
       </library>
     </orderEntry>
+    <orderEntry type="module-library" exported="">
+      <library>
+        <CLASSES>
+          <root url="file://$USER_HOME$/Downloads/current_JARs" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="file://$USER_HOME$/Downloads/current_JARs" />
+        </SOURCES>
+        <jarDirectory url="file://$USER_HOME$/Downloads/current_JARs" recursive="false" />
+        <jarDirectory url="file://$USER_HOME$/Downloads/current_JARs" recursive="false" type="SOURCES" />
+      </library>
+    </orderEntry>
   </component>
 </module>
