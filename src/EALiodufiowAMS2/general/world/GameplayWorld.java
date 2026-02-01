@@ -1,11 +1,11 @@
 package EALiodufiowAMS2.general.world;
 
-import EALiodufiowAMS2.engine.rendering.renderingObject.objects.cuboid.FaceType;
 import EALiodufiowAMS2.engine.rendering.renderingObject.Material;
 import EALiodufiowAMS2.engine.rendering.renderingObject.RenderingObject;
-import EALiodufiowAMS2.engine.rendering.renderingObject.Surface;
+import EALiodufiowAMS2.engine.rendering.renderingObject.objects.cuboid.CuboidFaceType;
 import EALiodufiowAMS2.engine.rendering.renderingObject.objects.cuboid.CuboidGeometry;
 import EALiodufiowAMS2.engine.rendering.renderingObject.Geometry;
+import EALiodufiowAMS2.engine.rendering.renderingObject.objects.cuboid.CuboidSurface;
 import EALiodufiowAMS2.helpers.Quaternion;
 import EALiodufiowAMS2.helpers.Transform;
 import EALiodufiowAMS2.helpers.Vec3;
@@ -23,13 +23,13 @@ public class GameplayWorld implements World{
 
     public List<RenderingObject> getRenderingObjects() {
         Map<String, RenderingObject> objects = new HashMap<>();
-        List<Surface> surfacesColors = new ArrayList<>();
-        surfacesColors.add(new Surface(FaceType.FRONT, new Material(Color.RED)));
-        surfacesColors.add(new Surface(FaceType.BACK, new Material(Color.GREEN)));
-        surfacesColors.add(new Surface(FaceType.TOP, new Material(Color.BLUE)));
-        surfacesColors.add(new Surface(FaceType.BOTTOM, new Material(Color.YELLOW)));
-        surfacesColors.add(new Surface(FaceType.LEFT, new Material(Color.CYAN)));
-        surfacesColors.add(new Surface(FaceType.RIGHT, new Material(Color.MAGENTA)));
+        List<CuboidSurface> surfacesColors = new ArrayList<>();
+        surfacesColors.add(new CuboidSurface(CuboidFaceType.FRONT, new Material(Color.RED)));
+        surfacesColors.add(new CuboidSurface(CuboidFaceType.BACK, new Material(Color.GREEN)));
+        surfacesColors.add(new CuboidSurface(CuboidFaceType.TOP, new Material(Color.BLUE)));
+        surfacesColors.add(new CuboidSurface(CuboidFaceType.BOTTOM, new Material(Color.YELLOW)));
+        surfacesColors.add(new CuboidSurface(CuboidFaceType.LEFT, new Material(Color.CYAN)));
+        surfacesColors.add(new CuboidSurface(CuboidFaceType.RIGHT, new Material(Color.MAGENTA)));
         Geometry cubeGeoColored = new CuboidGeometry(surfacesColors);
         Transform t1 = new Transform();
         t1.setPos(new Vec3(0, 0, 1));

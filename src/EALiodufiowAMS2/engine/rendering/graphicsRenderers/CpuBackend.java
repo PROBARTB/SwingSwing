@@ -73,8 +73,7 @@ public final class CpuBackend implements RenderBackend {
     @Override
     public void submit(DrawCommand cmd) {
         Mesh mesh = cmd.getMesh();
-        PrimitiveType primitiveType = cmd.getPrimitiveType();
-        Map<Mesh.FaceRange, Material> materialByRange = cmd.getMaterialByRange();
+        Map<Integer, Material> materialsBySlot = cmd.getMaterialsBySlot();
 
         Matrix4 model = cmd.getTransform().toModelMatrix();
         Matrix4 view  = camera.getViewMatrix();
@@ -91,26 +90,18 @@ public final class CpuBackend implements RenderBackend {
 
         transformVertices(vertices, mv, mvp, viewSpace, ndcSpace);
 
-        switch (primitiveType) {
-            case TRIANGLES -> {
-                for (Map.Entry<Mesh.FaceRange, Material> entry : materialByRange.entrySet()) {
-                    Mesh.FaceRange range = entry.getKey();
-                    Material material    = entry.getValue();
-                    if (range == null) continue;
-                    rasterizeMesh(range, indices, vertices, viewSpace, ndcSpace, material);
-                }
+        for (Mesh.SubMesh sub : mesh.getSubMeshes()) {
+            Material material = materialsBySlot.get(sub.materialSlot);
+            if (material == null) continue;
+
+            switch (sub.primitiveType) {
+                case TRIANGLES -> rasterizeMesh(sub, indices, vertices, viewSpace, ndcSpace, material);
+                case LINES     -> rasterizeLines(sub, indices, vertices, viewSpace, ndcSpace, material);
+                default -> throw new UnsupportedOperationException("Unsupported primitive type: " + sub.primitiveType);
             }
-            case LINES -> {
-                for (Map.Entry<Mesh.FaceRange, Material> entry : materialByRange.entrySet()) {
-                    Mesh.FaceRange range = entry.getKey();
-                    Material material    = entry.getValue();
-                    if (range == null) continue;
-                    rasterizeLines(range, indices, vertices, viewSpace, ndcSpace, material);
-                }
-            }
-            default -> throw new UnsupportedOperationException("Unsupported primitive type: " + primitiveType);
         }
     }
+
 
 
     @Override
@@ -153,7 +144,7 @@ public final class CpuBackend implements RenderBackend {
     }
 
     private void rasterizeMesh(
-            Mesh.FaceRange range,
+            Mesh.SubMesh sub,
             int[] indices,
             Vertex[] vertices,
             Vec3[] viewSpace,
@@ -163,7 +154,10 @@ public final class CpuBackend implements RenderBackend {
         int w = rasterizer.getBufferWidth();
         int h = rasterizer.getBufferHeight();
 
-        for (int i = range.startIndex; i < range.startIndex + range.indexCount; i += 3) {
+        int start = sub.indexOffset;
+        int end   = sub.indexOffset + sub.indexCount;
+
+        for (int i = start; i < end; i += 3) {
             int i0 = indices[i];
             int i1 = indices[i + 1];
             int i2 = indices[i + 2];
@@ -185,6 +179,7 @@ public final class CpuBackend implements RenderBackend {
             );
         }
     }
+
 
 
     private boolean isTriangleInFront(Vec3[] viewSpace, int i0, int i1, int i2) {
@@ -244,7 +239,7 @@ public final class CpuBackend implements RenderBackend {
 
 
     private void rasterizeLines(
-            Mesh.FaceRange range,
+            Mesh.SubMesh sub,
             int[] indices,
             Vertex[] vertices,
             Vec3[] viewSpace,
@@ -254,7 +249,10 @@ public final class CpuBackend implements RenderBackend {
         int w = rasterizer.getBufferWidth();
         int h = rasterizer.getBufferHeight();
 
-        for (int i = range.startIndex; i < range.startIndex + range.indexCount; i += 2) {
+        int start = sub.indexOffset;
+        int end   = sub.indexOffset + sub.indexCount;
+
+        for (int i = start; i < end; i += 2) {
             int i0 = indices[i];
             int i1 = indices[i + 1];
 
@@ -272,5 +270,6 @@ public final class CpuBackend implements RenderBackend {
             );
         }
     }
+
 
 }

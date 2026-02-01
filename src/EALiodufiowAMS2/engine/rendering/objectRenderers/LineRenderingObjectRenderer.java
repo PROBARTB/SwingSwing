@@ -11,14 +11,14 @@ import EALiodufiowAMS2.engine.rendering.renderingObject.RenderingObject;
 import EALiodufiowAMS2.engine.rendering.renderingObject.objects.line.Line;
 import EALiodufiowAMS2.engine.rendering.renderingObject.objects.line.LineGeometry;
 import EALiodufiowAMS2.engine.rendering.renderingObject.objects.line.lines.StraightLineGeometry;
+import EALiodufiowAMS2.helpers.Matrix4;
 import EALiodufiowAMS2.helpers.Mesh;
 import EALiodufiowAMS2.helpers.Transform;
 import EALiodufiowAMS2.helpers.Vec3;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.awt.*;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 public final class LineRenderingObjectRenderer implements RenderingObjectRenderer {
 
@@ -77,25 +77,29 @@ public final class LineRenderingObjectRenderer implements RenderingObjectRendere
 
         LineRenderData data = renderer.buildRenderData(lineGeometry);
 
-        // 1. Rysowanie nitki, jeśli ma kolor
         java.awt.Color lineColor = line.getLineColor();
         if (lineColor != null && data.getLineMesh() != null) {
             Mesh mesh = data.getLineMesh();
             Material lineMaterial = new Material(lineColor);
 
-            Mesh.FaceRange wholeRange = new Mesh.FaceRange(null, 0, mesh.getIndices().length);
-            Map<Mesh.FaceRange, Material> materialByRange = Map.of(wholeRange, lineMaterial);
+            int maxSlot = 0;
+            for (Mesh.SubMesh sm : mesh.getSubMeshes()) {
+                maxSlot = Math.max(maxSlot, sm.materialSlot);
+            }
+
+            Map<Integer, Material> materialsBySlot = new HashMap<>();
+            for (int i = 0; i <= maxSlot; i++) {
+                materialsBySlot.put(i, lineMaterial);
+            }
 
             DrawCommand lineCmd = new DrawCommand(
                     mesh,
-                    PrimitiveType.LINES,
-                    line.getTransform(), // Transform RenderingObjectu linii
-                    materialByRange
+                    line.getTransform(),
+                    materialsBySlot
             );
             outCommands.add(lineCmd);
         }
 
-        // 2. Filler – potrzebujemy polilinii w świecie
         RenderingObject filler = line.getFiller();
         if (filler != null) {
             List<Vec3> polylineLocal = data.getPolylineLocal();
@@ -103,11 +107,9 @@ public final class LineRenderingObjectRenderer implements RenderingObjectRendere
 
             List<Vec3> polylineWorld = new ArrayList<>(polylineLocal.size());
             for (Vec3 p : polylineLocal) {
-                polylineWorld.add(lineTransform.getPos().add(p));
+                polylineWorld.add(lineTransform.toModelMatrix().transformPoint(p));
             }
 
-            // długość w świecie – przy założeniu, że transform jest izometryczny (bez skalowania),
-            // możemy użyć tej samej długości; jeśli nie, można przeliczyć po polylineWorld
             double lengthWorld = 0.0;
             for (int i = 0; i < polylineWorld.size() - 1; i++) {
                 lengthWorld += polylineWorld.get(i + 1).sub(polylineWorld.get(i)).length();

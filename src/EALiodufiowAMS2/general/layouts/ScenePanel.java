@@ -546,7 +546,7 @@ import java.util.List;
       }
 
       private void stepAndRender(double deltaTime) {
-          System.out.println(deltaTime);
+          //System.out.println(deltaTime);
 
           if (!paused) {
               updateScene(deltaTime);

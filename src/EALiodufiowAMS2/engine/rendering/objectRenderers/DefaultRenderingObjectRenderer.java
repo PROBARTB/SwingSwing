@@ -9,14 +9,15 @@ import EALiodufiowAMS2.engine.rendering.geometryRenderer.GeometryRenderer;
 import EALiodufiowAMS2.engine.rendering.graphicsRenderers.RenderBackend;
 import EALiodufiowAMS2.engine.rendering.renderingObject.Geometry;
 import EALiodufiowAMS2.engine.rendering.renderingObject.Material;
+import EALiodufiowAMS2.engine.rendering.renderingObject.MaterialBlendMode;
 import EALiodufiowAMS2.engine.rendering.renderingObject.RenderingObject;
 import EALiodufiowAMS2.engine.rendering.renderingObject.objects.SurfaceGeometry;
+import EALiodufiowAMS2.engine.rendering.renderingObject.objects.cuboid.CuboidGeometry;
 import EALiodufiowAMS2.helpers.Mesh;
 
 import java.awt.*;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 
 public final class DefaultRenderingObjectRenderer implements RenderingObjectRenderer {
@@ -24,9 +25,7 @@ public final class DefaultRenderingObjectRenderer implements RenderingObjectRend
     private final Map<Class<? extends Geometry>, GeometryRenderer<?>> geometryRenderers = new HashMap<>();
 
     public DefaultRenderingObjectRenderer() {
-        // rejestracja geometry rendererów
         registerGeometryRenderer(new CuboidGeometryRenderer());
-        // w przyszłości: registerGeometryRenderer(new SphereGeometryRenderer()); itd.
     }
 
     @Override
@@ -57,6 +56,7 @@ public final class DefaultRenderingObjectRenderer implements RenderingObjectRend
     public void buildDrawCommands(RenderBackend backend,
                                   RenderingObject object,
                                   List<DrawCommand> outCommands) {
+
         Geometry geom = object.getGeometry();
         if (geom == null) return;
 
@@ -64,41 +64,55 @@ public final class DefaultRenderingObjectRenderer implements RenderingObjectRend
         if (renderer == null) return;
 
         GeometryDrawData data = renderer.buildDrawData(geom);
+        List<GeometryDrawSurface> surfaces = data.getSurfaces();
+        if (surfaces.isEmpty()) return;
 
-        Map<Mesh.FaceRange, Material> materialByRange = new HashMap<>();
+        int maxSlot = -1;
+        for (GeometryDrawSurface s : surfaces) {
+            maxSlot = Math.max(maxSlot, s.getMaterialSlot());
+        }
+        if (maxSlot < 0) return;
 
-        // mapowanie surfaceId -> Material z geometrii
-        // zakładamy, że Geometry ma metodę getSurfaces() zwracającą Surface z identyfikatorem (np. FaceType)
-        if (geom instanceof SurfaceGeometry surfaceGeometry) {
-            // SurfaceGeometry to opcjonalny interfejs, który może mieć CuboidGeometry
-            for (GeometryDrawSurface s : data.getSurfaces()) {
-                Object id = s.getSurfaceId();
-                Material mat = surfaceGeometry.getMaterialForSurface(id);
+        Map<Integer, Material> materialsBySlot = new HashMap<>();
+
+        if (geom instanceof SurfaceGeometry sg) {
+
+            for (GeometryDrawSurface s : surfaces) {
+                int slot = s.getMaterialSlot();
+                Object surfaceId = s.getSurfaceId();
+                Material mat = sg.getMaterialForSurface(surfaceId);
+
                 if (mat != null) {
-                    materialByRange.put(s.getFaceRange(), mat);
+                    materialsBySlot.put(slot, mat);
                 }
             }
+
         } else {
-            // fallback: jeśli geometra nie implementuje SurfaceGeometry,
-            // można przypisać jeden domyślny materiał (np. z samej geometrii)
-            Material defaultMaterial = new Material(new Color(0x88ffffff, true));
-            for (GeometryDrawSurface s : data.getSurfaces()) {
-                materialByRange.put(s.getFaceRange(), defaultMaterial);
+            Material defaultMaterial = new Material(new Color(0x88ffffff, true), MaterialBlendMode.TRANSPARENT);
+
+            for (GeometryDrawSurface s : surfaces) {
+                int slot = s.getMaterialSlot();
+                materialsBySlot.put(slot, defaultMaterial);
             }
         }
 
-        if (materialByRange.isEmpty()) {
-            return;
+        boolean anyMaterial = materialsBySlot.values().stream().anyMatch(Objects::nonNull);
+        if (!anyMaterial) return;
+
+        Material fallback = new Material(new Color(0x88ffffff, true), MaterialBlendMode.TRANSPARENT);
+
+        for (int i = 0; i <= maxSlot; i++) {
+            materialsBySlot.putIfAbsent(i, fallback);
         }
 
         DrawCommand cmd = new DrawCommand(
                 data.getMesh(),
-                data.getPrimitiveType(),
                 object.getTransform(),
-                materialByRange
+                materialsBySlot
         );
+
         outCommands.add(cmd);
     }
-}
 
+}
 
