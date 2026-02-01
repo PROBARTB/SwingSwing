@@ -1,106 +1,115 @@
 package EALiodufiowAMS2.game.builders;
 
-import EALiodufiowAMS2.helpers.*;
-import EALiodufiowAMS2.engine.rendering.renderingObject.FaceType;
-import EALiodufiowAMS2.engine.rendering.renderingObject.Surface;
 import EALiodufiowAMS2.engine.rendering.TextureManager;
-import EALiodufiowAMS2.engine.rendering.renderingObject.*;
+import EALiodufiowAMS2.engine.rendering.renderingObject.FaceType;
+import EALiodufiowAMS2.engine.rendering.renderingObject.Material;
+import EALiodufiowAMS2.engine.rendering.renderingObject.RenderingObject;
+import EALiodufiowAMS2.engine.rendering.renderingObject.Surface;
 import EALiodufiowAMS2.engine.rendering.renderingObject.geometries.CuboidGeometry;
 import EALiodufiowAMS2.engine.rendering.renderingObject.geometries.Geometry;
+import EALiodufiowAMS2.helpers.Quaternion;
+import EALiodufiowAMS2.helpers.Transform;
+import EALiodufiowAMS2.helpers.Vec3;
 
-import java.awt.Color;
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 
-public class BuilderTest3D implements Builder {
+public class PiotrostalObjectBuilder implements Builder {
+
     private final Map<String, RenderingObject> objects = new HashMap<>();
+    private final Deque<String> spawnedCubeIds = new ArrayDeque<>();
 
-    public BuilderTest3D() {
-        // wspólne tekstury dla przykładu
-        List<Surface> surfaces = new ArrayList<>();
-        surfaces.add(new Surface(FaceType.FRONT, new Material(Color.RED, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"))));
-        surfaces.add(new Surface(FaceType.BACK, new Material(Color.GREEN, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"))));
-        surfaces.add(new Surface(FaceType.TOP, new Material(Color.BLUE, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"))));
-        surfaces.add(new Surface(FaceType.BOTTOM, new Material(Color.YELLOW, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"))));
-        surfaces.add(new Surface(FaceType.LEFT, new Material(Color.CYAN, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"))));
-        surfaces.add(new Surface(FaceType.RIGHT, new Material(Color.MAGENTA, TextureManager.getTexture("assets\\vehicles\\trams\\PesaSwing\\120Na-section-1.png"))));
+    private final Random random = new Random();
+    private int cubeCounter = 0;
 
-        List<Surface> surfacesColors = new ArrayList<>();
-        surfacesColors.add(new Surface(FaceType.FRONT, new Material(Color.RED)));
-        surfacesColors.add(new Surface(FaceType.BACK, new Material(Color.GREEN)));
-        surfacesColors.add(new Surface(FaceType.TOP, new Material(Color.BLUE)));
-        surfacesColors.add(new Surface(FaceType.BOTTOM, new Material(Color.YELLOW)));
-        surfacesColors.add(new Surface(FaceType.LEFT, new Material(Color.CYAN)));
-        surfacesColors.add(new Surface(FaceType.RIGHT, new Material(Color.MAGENTA)));
+    public PiotrostalObjectBuilder() {
 
-        Geometry cubeGeoTextured = new CuboidGeometry(surfaces);
+        // ---------------------------------------------------------
+        // 1. TWORZYMY TYLKO cubeWithCamera — STAŁY OBIEKT
+        // ---------------------------------------------------------
+
+        Geometry cubeGeo = new CuboidGeometry(new ArrayList<>());
 
         Transform t1 = new Transform();
-        t1.setPos(new Vec3(0, 0.5, 1));
+        t1.setPos(new Vec3(0, 0, 0));
         t1.setSize(new Vec3(1, 1, 1));
-        t1.setRot(Quaternion.fromEuler(new Vec3(Math.toRadians(0), 0, 0)));
-        RenderingObject cubeWithCamera = new RenderingObject(cubeGeoTextured, t1);
+        t1.setRot(Quaternion.fromEuler(new Vec3(0, 0, 0)));
+
+        RenderingObject cubeWithCamera = new RenderingObject(cubeGeo, t1);
         objects.put("cubeWithCamera", cubeWithCamera);
 
-        Geometry cubeGeoColored = new CuboidGeometry(surfacesColors);
-        Transform t2 = new Transform();
-        t2.setPos(new Vec3(1.5, 0, 0));
-        t2.setSize(new Vec3(1, 1, 1));
-        t2.setRot(Quaternion.fromEuler(new Vec3(0, 0, 0)));
-        RenderingObject rotatingCube1 = new RenderingObject(cubeGeoColored, t2);
-        objects.put("rotatingCube1", rotatingCube1);
-
-        Transform t3 = new Transform();
-        t3.setPos(new Vec3(3, 0, 2));
-        t3.setSize(new Vec3(2, 2, 2));
-        t3.setRot(Quaternion.fromEuler(new Vec3(Math.toRadians(0), 0, 0)));
-        RenderingObject cube3 = new RenderingObject(cubeGeoTextured, t3);
-        objects.put("cube3", cube3);
-
-
-//        Surface s1 = new Surface(FaceType.FRONT, TextureManager.getTexture("assets\\texture.png"), Color.PINK);
-//        Rectangle rect1 = new Rectangle(new Transform(), s1);
-//        rect1.getTransform().setPos(new Vec3(0, 0, 7));
-//        rect1.getTransform().setSize(new Vec3(14, 2, 0));
-//        rect1.getTransform().setRot(Quaternion.fromEuler(new Vec3(0, 0, 0)));
-//        objects.put("bgrect1", rect1);
-//
-//        Rectangle rect2 = new Rectangle(new Transform(), s1);
-//        rect2.getTransform().setPos(new Vec3(7, 0, 0));
-//        rect2.getTransform().setSize(new Vec3(14, 2, 0));
-//        rect2.getTransform().setRot(Quaternion.fromEuler(new Vec3(Math.toRadians(-90), 0, 0)));
-//        objects.put("bgrect2", rect2);
-//
-//        Rectangle rect3 = new Rectangle(new Transform(), s1);
-//        rect3.getTransform().setPos(new Vec3(0, 0, -7));
-//        rect3.getTransform().setSize(new Vec3(14, 2, 0));
-//        rect3.getTransform().setRot(Quaternion.fromEuler(new Vec3(Math.toRadians(180), 0, 0)));
-//        objects.put("bgrect3", rect3);
-//
-//        Rectangle rect4 = new Rectangle(new Transform(), s1);
-//        rect4.getTransform().setPos(new Vec3(-7, 0, 0));
-//        rect4.getTransform().setSize(new Vec3(14, 2, 0));
-//        rect4.getTransform().setRot(Quaternion.fromEuler(new Vec3(Math.toRadians(90), 0, 0)));
-//        objects.put("bgrect4", rect4);
-//
-//        StraightLine lineS1 = new StraightLine(new Vec3(-3, 0, -2), new Vec3(-1, 0, 0), Color.CYAN);
-//        objects.put("lineS1", lineS1);
-//
-//        CurvedLine lineC1 = new CurvedLine(
-//                new Transform(new Vec3(-1, 0, 0), Quaternion.fromEuler(new Vec3(Math.toRadians(315), 0, 0)), new Vec3(2, 0, 0)),
-//                new Transform(new Vec3(1, 0, 2), Quaternion.fromEuler(new Vec3(0, 0, 0)), new Vec3(2, 0, 0)),
-//                0.75, Color.YELLOW);
-//        objects.put("lineC1", lineC1);
+        // ---------------------------------------------------------
+        // 2. TWORZYMY PIERWSZĄ NOWĄ KOSTKĘ
+        // ---------------------------------------------------------
+        spawnCubeInternal();
     }
+
+    // ---------------------------------------------------------
+    // TWORZENIE NOWEJ KOSTKI (używane wewnętrznie)
+    // ---------------------------------------------------------
+
+    private void spawnCubeInternal() {
+
+        List<Surface> newSurfaces = new ArrayList<>();
+        newSurfaces.add(new Surface(FaceType.FRONT, new Material(Color.WHITE, TextureManager.getTexture("assets\\Piotrostal\\ep07_1.jpg"))));
+        newSurfaces.add(new Surface(FaceType.BACK, new Material(Color.WHITE, TextureManager.getTexture("assets\\Piotrostal\\ep07_1.jpg"))));
+        newSurfaces.add(new Surface(FaceType.TOP, new Material(Color.WHITE, TextureManager.getTexture("assets\\Piotrostal\\ep07_1.jpg"))));
+        newSurfaces.add(new Surface(FaceType.BOTTOM, new Material(Color.WHITE, TextureManager.getTexture("assets\\Piotrostal\\ep07_1.jpg"))));
+        newSurfaces.add(new Surface(FaceType.LEFT, new Material(Color.WHITE, TextureManager.getTexture("assets\\Piotrostal\\ep07_1.jpg"))));
+        newSurfaces.add(new Surface(FaceType.RIGHT, new Material(Color.WHITE, TextureManager.getTexture("assets\\Piotrostal\\ep07_1.jpg"))));
+
+        Geometry geo = new CuboidGeometry(newSurfaces);
+
+        Vec3 pos = new Vec3(
+                random.nextDouble() * 6 - 3,
+                random.nextDouble() * 3,
+                random.nextDouble() * 6 - 3
+        );
+
+        Transform t = new Transform();
+        t.setPos(pos);
+        t.setSize(new Vec3(1, 1, 1));
+        t.setRot(Quaternion.fromEuler(new Vec3(0, 0, 0)));
+
+        RenderingObject newCube = new RenderingObject(geo, t);
+
+        String id = "spawnedCube_" + cubeCounter++;
+        objects.put(id, newCube);
+        spawnedCubeIds.push(id); // LIFO
+    }
+
+    // ---------------------------------------------------------
+    // FUNKCJA WYWOŁYWANA PO KLIKNIĘCIU PRZYCISKU
+    // ---------------------------------------------------------
+
+    public void spawnNextCube() {
+
+        // 1. Usuń ostatnio dodaną kostkę (ale nigdy cubeWithCamera)
+        if (!spawnedCubeIds.isEmpty()) {
+            String lastId = spawnedCubeIds.pop();
+            objects.remove(lastId);
+        }
+
+        // 2. Stwórz nową kostkę
+        spawnCubeInternal();
+    }
+
+    // ---------------------------------------------------------
+    // UPDATE – obracanie nowych kostek
+    // ---------------------------------------------------------
 
     @Override
     public void update(double deltaTime) {
-        double rotationSpeed = 2 * Math.PI / 10; // rad/s
+        double rotationSpeed = 2 * Math.PI / 10;
         double deltaRotation = rotationSpeed * deltaTime;
 
-        //for (Cuboid cube : cuboids.values()) {
-        RenderingObject obj = objects.get("cubeWithCamera");
-        obj.getTransform().rotateEuler(new Vec3(deltaRotation, 0, 0));
-        //}
+        for (String id : spawnedCubeIds) {
+            RenderingObject cube = objects.get(id);
+            if (cube != null) {
+                cube.getTransform().rotateEuler(new Vec3(0, deltaRotation, 0));
+            }
+        }
     }
 
     @Override
@@ -109,7 +118,9 @@ public class BuilderTest3D implements Builder {
     }
 
     @Override
-    public List<RenderingObject> getRenderingObjects() { return new ArrayList<>(objects.values());};
+    public List<RenderingObject> getRenderingObjects() {
+        return new ArrayList<>(objects.values());
+    }
 
     @Override
     public RenderingObject buildRenderingObject(String id) {

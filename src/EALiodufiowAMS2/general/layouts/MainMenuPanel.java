@@ -27,7 +27,8 @@ public class MainMenuPanel extends JPanel {
 
         JButton startGameButton = new JButton("Start Game");
         startGameButton.addActionListener(e -> {
-            if (navigation != null) navigation.startNewGameFlow();
+           // if (navigation != null) navigation.startNewGameFlow();
+            if (navigation != null) navigation.loadPiotrostalScene();
         });
 
         JButton worldEditorButton = new JButton("World Editor");

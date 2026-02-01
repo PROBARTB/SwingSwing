@@ -28,7 +28,8 @@ public class GameController implements GameNavigation {
                 List.of(
                         new GameplaySceneModule(),
                         new EditorSceneModule(),
-                        new DebugSceneModule()
+                        new DebugSceneModule(),
+                        new PiotrostalSceneModule()
                     )
             );
     }
@@ -88,6 +89,14 @@ public class GameController implements GameNavigation {
     @Override
     public void loadDebugScene() {
         sceneManager.getSceneAsync(SceneId.DEBUG, EmptyConfig.INSTANCE,
+                gamePanel::showScene,
+                this::onException
+        );
+    }
+
+    @Override
+    public void loadPiotrostalScene() {
+        sceneManager.getSceneAsync(SceneId.PIOTROSTAL, EmptyConfig.INSTANCE,
                 gamePanel::showScene,
                 this::onException
         );
