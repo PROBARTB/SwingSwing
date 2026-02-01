@@ -1,6 +1,7 @@
-package EALiodufiowAMS2.engine.rendering;
+package EALiodufiowAMS2.engine.rendering.graphicsRenderers.cpu;
 
 import EALiodufiowAMS2.engine.rendering.renderingObject.Material;
+import EALiodufiowAMS2.engine.rendering.renderingObject.TextureMode;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -60,7 +61,7 @@ public class Rasterizer {
         Color color = material.getColor();
 
         if (texture != null) {
-            fillWithTexture(pixels, texture);
+            fillWithTexture(pixels, texture, material.getTextureMode());
         } else if (color != null) {
             Arrays.fill(pixels, color.getRGB());
         } else {
@@ -70,23 +71,76 @@ public class Rasterizer {
         Arrays.fill(zBuffer, Double.POSITIVE_INFINITY);
     }
 
-    private void fillWithTexture(int[] pixels, BufferedImage texture) {
+    private void fillWithTexture(int[] pixels, BufferedImage texture, TextureMode mode) {
+
         int w = frameBuffer.getWidth();
         int h = frameBuffer.getHeight();
 
         int texW = texture.getWidth();
         int texH = texture.getHeight();
 
-        int[] texPixels = ((DataBufferInt) texture.getRaster().getDataBuffer()).getData();
+        int[] texPixels = getImagePixels(texture);
 
+        switch (mode) {
+            case STRETCH -> fillStretch(pixels, texPixels, w, h, texW, texH);
+            case TILE -> fillTile(pixels, texPixels, w, h, texW, texH);
+            case TILE_FIT -> fillTileFit(pixels, texPixels, w, h, texW, texH);
+        }
+    }
+    private int[] getImagePixels(BufferedImage img) {
+        int w = img.getWidth();
+        int h = img.getHeight();
+        int[] out = new int[w * h];
+
+        img.getRGB(0, 0, w, h, out, 0, w);
+
+        return out;
+    }
+
+    private void fillStretch(int[] dst, int[] src, int w, int h, int texW, int texH) {
+        for (int y = 0; y < h; y++) {
+            float ty = (y / (float) h) * (texH - 1);
+            int iy = (int) ty;
+
+            for (int x = 0; x < w; x++) {
+                float tx = (x / (float) w) * (texW - 1);
+                int ix = (int) tx;
+
+                dst[y * w + x] = src[iy * texW + ix];
+            }
+        }
+    }
+    private void fillTile(int[] dst, int[] src, int w, int h, int texW, int texH) {
         for (int y = 0; y < h; y++) {
             int ty = y % texH;
             for (int x = 0; x < w; x++) {
                 int tx = x % texW;
-                pixels[y * w + x] = texPixels[ty * texW + tx];
+                dst[y * w + x] = src[ty * texW + tx];
             }
         }
     }
+    private void fillTileFit(int[] dst, int[] src, int w, int h, int texW, int texH) {
+
+        int tilesX = Math.max(1, w / texW);
+        int tilesY = Math.max(1, h / texH);
+
+        float scaleX = w / (float) (tilesX * texW);
+        float scaleY = h / (float) (tilesY * texH);
+
+        for (int y = 0; y < h; y++) {
+            float ty = (y / scaleY) % texH;
+            int iy = (int) ty;
+
+            for (int x = 0; x < w; x++) {
+                float tx = (x / scaleX) % texW;
+                int ix = (int) tx;
+
+                dst[y * w + x] = src[iy * texW + ix];
+            }
+        }
+    }
+
+
 
 
 
@@ -156,7 +210,13 @@ public class Rasterizer {
 
         int[] fb = ((java.awt.image.DataBufferInt) frameBuffer.getRaster().getDataBuffer()).getData();
 
-        // przygotuj wartości 1/z i u/z, v/z
+        int[] tex = null;
+        int texW = 0;
+        if (texture != null) {
+            tex = getImagePixels(texture);
+            texW = texture.getWidth();
+        }
+
         double invZ0 = 1.0 / z0;
         double invZ1 = 1.0 / z1;
         double invZ2 = 1.0 / z2;
@@ -186,21 +246,20 @@ public class Rasterizer {
                 int idx = y * bufferWidth + x;
                 if (z < zBuffer[idx]) {
                     int src;
-                    if (texture != null) {
+                    if (tex != null) {
                         int tx = clamp((int)(tu * texture.getWidth()), 0, texture.getWidth() - 1);
                         int ty = clamp((int)((1.0 - tv) * texture.getHeight()), 0, texture.getHeight() - 1);
 
-                        src = texture.getRGB(tx, ty);
+                        src = tex[ty * texW + tx];
                     } else {
                         src = (flatColor != null ? flatColor.getRGB() : 0xFFFFFFFF);
                     }
 
                     int srcA = (src >>> 24) & 0xFF;
-                    if (srcA == 255) {
+                    if (srcA > 128) { // !!!!!! Alpha cutoff at 128
                         zBuffer[idx] = z;
                         fb[idx] = src;
                     }
-                    // jeśli srcA < 255 → ignorujemy, nie zapisujemy nic
                 }
             }
         }

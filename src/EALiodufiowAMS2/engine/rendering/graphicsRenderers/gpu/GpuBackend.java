@@ -1,7 +1,8 @@
-package EALiodufiowAMS2.engine.rendering.graphicsRenderers;
+package EALiodufiowAMS2.engine.rendering.graphicsRenderers.gpu;
 
 import EALiodufiowAMS2.engine.rendering.*;
-import EALiodufiowAMS2.engine.rendering.renderingObject.MaterialBlendMode;
+import EALiodufiowAMS2.engine.rendering.graphicsRenderers.RenderBackend;
+import EALiodufiowAMS2.engine.rendering.renderingObject.TextureMode;
 import EALiodufiowAMS2.helpers.*;
 import EALiodufiowAMS2.engine.rendering.renderingObject.Material;
 import EALiodufiowAMS2.engine.Camera;
@@ -35,10 +36,13 @@ public final class GpuBackend implements RenderBackend {
 
     private final List<DrawCommand> commands = new ArrayList<>();
 
+    private final ShaderProgram bgShader;
+
     public GpuBackend(int width, int height) {
         this.width = width;
         this.height = height;
-        this.shader = new ShaderProgram();
+        this.shader = new MainShaderProgram();
+        this.bgShader = new BgShaderProgram();
     }
 
     @Override
@@ -140,18 +144,21 @@ public final class GpuBackend implements RenderBackend {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        Material voidMat = scene.getVoidMAterial();
-        if (voidMat != null) {
-            java.awt.Color c = voidMat.getColor();
-            float r = c.getRed()   / 255.0f;
-            float g = c.getGreen() / 255.0f;
-            float b = c.getBlue()  / 255.0f;
-            float a = c.getAlpha() / 255.0f;
-            glClearColor(r, g, b, a);
-        } else {
-            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        }
+//        Material voidMat = scene.getVoidMAterial();
+//        if (voidMat != null) {
+//            java.awt.Color c = voidMat.getColor();
+//            float r = c.getRed()   / 255.0f;
+//            float g = c.getGreen() / 255.0f;
+//            float b = c.getBlue()  / 255.0f;
+//            float a = c.getAlpha() / 255.0f;
+//            glClearColor(r, g, b, a);
+//        } else {
+//            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+//        }
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        Material voidMat = scene.getVoidMAterial();
+        renderBackground(voidMat, width, height, voidMat.getTextureMode());
 
         Matrix4 view = camera.getViewMatrix();
         Matrix4 proj = camera.getProjectionMatrix();
@@ -238,7 +245,6 @@ public final class GpuBackend implements RenderBackend {
     private void drawRenderItem(RenderItem item) {
         glBindVertexArray(item.handle.vaoId);
 
-        // model matrix
         shader.setUniformMat4("uModel", item.model);
 
         Mesh.SubMesh sub = item.subMesh;
@@ -384,143 +390,105 @@ public final class GpuBackend implements RenderBackend {
     private record GpuMeshHandle(int vaoId, int vboId, int eboId, int vertexCount, int indexCount) {
     }
 
-    public static final class ShaderProgram {
-        private int programId = 0;
 
-        private static final String VS_SRC = """
-                #version 330 core
-                layout(location = 0) in vec3 aPosition;
-                layout(location = 1) in vec2 aTexCoord;
-
-                uniform mat4 uModel;
-                uniform mat4 uView;
-                uniform mat4 uProj;
-
-                out vec2 vTexCoord;
-
-                void main() {
-                    vTexCoord = aTexCoord;
-                    gl_Position = uProj * uView * uModel * vec4(aPosition, 1.0);
-                }
-                """;
-
-        private static final String FS_SRC = """
-                #version 330 core
-                in vec2 vTexCoord;
-                out vec4 FragColor;
-                
-                uniform sampler2D uTexture;
-                uniform vec4 uColor;
-                uniform int uUseTexture;
-                
-                uniform int uBlendMode;      // 0 = OPAQUE, 1 = CUTOUT, 2 = TRANSPARENT
-                uniform float uAlphaCutoff;
-                
-                void main() {
-                
-                    vec4 baseColor = uColor;
-                
-                    if (uUseTexture == 1) {
-                        vec4 texColor = texture(uTexture, vec2(vTexCoord.x, 1.0 - vTexCoord.y));
-                        baseColor = texColor;
-                    }
-                
-                    if (uBlendMode == 1) {
-                        if (baseColor.a < uAlphaCutoff) {
-                            discard;
-                        }
-                        FragColor = baseColor;
-                        return;
-                    }
-                
-                    FragColor = baseColor;
-                }
-                """;
-
-        public ShaderProgram() {
+    public void renderBackground(Material voidMat, int screenW, int screenH, TextureMode mode) {
+        if (voidMat == null) {
+            glClearColor(0f, 0f, 0f, 1f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            return;
         }
 
-        public void initProgram() {
-            if (programId != 0) return;
+        BufferedImage tex = voidMat.getTexture();
 
-            int vs = compileShader(GL_VERTEX_SHADER, VS_SRC);
-            int fs = compileShader(GL_FRAGMENT_SHADER, FS_SRC);
-
-            programId = glCreateProgram();
-            glAttachShader(programId, vs);
-            glAttachShader(programId, fs);
-            glLinkProgram(programId);
-
-            if (glGetProgrami(programId, GL_LINK_STATUS) == GL_FALSE) {
-                String log = glGetProgramInfoLog(programId);
-                throw new IllegalStateException("Program link error: " + log);
-            }
-
-            glDetachShader(programId, vs);
-            glDetachShader(programId, fs);
-            glDeleteShader(vs);
-            glDeleteShader(fs);
+        if (tex == null) {
+            java.awt.Color c = voidMat.getColor();
+            glClearColor(c.getRed()/255f, c.getGreen()/255f, c.getBlue()/255f, c.getAlpha()/255f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            return;
         }
 
-        private int compileShader(int type, String src) {
-            int id = glCreateShader(type);
-            glShaderSource(id, src);
-            glCompileShader(id);
-
-            if (glGetShaderi(id, GL_COMPILE_STATUS) == GL_FALSE) {
-                String log = glGetShaderInfoLog(id);
-                throw new IllegalStateException("Shader compile error: " + log);
-            }
-            return id;
-        }
-
-        public void bind() {
-            glUseProgram(programId);
-        }
-
-        public void unbind() {
-            glUseProgram(0);
-        }
-
-        public void dispose() {
-            if (programId != 0) {
-                glDeleteProgram(programId);
-                programId = 0;
-            }
-        }
-
-        public void setUniformMat4(String name, Matrix4 mat) {
-            int loc = glGetUniformLocation(programId, name);
-            if (loc < 0) return;
-            FloatBuffer fb = BufferUtils.createFloatBuffer(16);
-            for (int i = 0; i < 16; i++) {
-                fb.put((float) mat.m[i]);
-            }
-            fb.flip();
-            glUniformMatrix4fv(loc, false, fb);
-        }
-
-        public void setUniformVec4(String name, java.awt.Color color) {
-            int loc = glGetUniformLocation(programId, name);
-            if (loc < 0) return;
-            float r = color.getRed()   / 255.0f;
-            float g = color.getGreen() / 255.0f;
-            float b = color.getBlue()  / 255.0f;
-            float a = color.getAlpha() / 255.0f;
-            glUniform4f(loc, r, g, b, a);
-        }
-
-        public void setUniformInt(String name, int value) {
-            int loc = glGetUniformLocation(programId, name);
-            if (loc < 0) return;
-            glUniform1i(loc, value);
-        }
-
-        public void setUniformFloat(String name, float value) {
-            int loc = glGetUniformLocation(programId, name);
-            if (loc < 0) return;
-            glUniform1f(loc, value);
-        }
-
+        drawBackgroundTexture(tex, screenW, screenH, mode);
     }
+
+    private void drawBackgroundTexture(BufferedImage img, int screenW, int screenH, TextureMode mode) {
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_LIGHTING);
+
+        initBackgroundQuad();
+        bgShader.initProgram();
+
+        int texId = textureCache.computeIfAbsent(img, this::uploadTexture);
+        int texW = img.getWidth();
+        int texH = img.getHeight();
+
+        float scaleX = 1f;
+        float scaleY = 1f;
+
+        switch (mode) {
+            case STRETCH:
+                scaleX = 1f;
+                scaleY = 1f;
+                break;
+
+            case TILE:
+                scaleX = screenW / (float) texW;
+                scaleY = screenH / (float) texH;
+                break;
+
+            case TILE_FIT:
+                scaleX = (int) (screenW / (float) texW);
+                scaleY = (int) (screenH / (float) texH);
+                break;
+        }
+
+        bgShader.bind();
+        bgShader.setUniformFloat("uScaleX", scaleX);
+        bgShader.setUniformFloat("uScaleY", scaleY);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texId);
+        bgShader.setUniformInt("uTexture", 0);
+
+        glBindVertexArray(bgVAO);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+        glBindVertexArray(0);
+
+        bgShader.unbind();
+
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+    }
+
+    private int bgVAO = 0;
+    private int bgVBO = 0;
+    private void initBackgroundQuad() {
+
+        if (bgVAO != 0) return;
+
+        float[] quad = {
+                // pos      // uv
+                0, 0,       0, 0,
+                1, 0,       1, 0,
+                1, 1,       1, 1,
+                0, 1,       0, 1
+        };
+
+        bgVAO = glGenVertexArrays();
+        bgVBO = glGenBuffers();
+
+        glBindVertexArray(bgVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, bgVBO);
+        glBufferData(GL_ARRAY_BUFFER, quad, GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, false, 4 * Float.BYTES, 0);
+
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 2, GL_FLOAT, false, 4 * Float.BYTES, 2 * Float.BYTES);
+
+        glBindVertexArray(0);
+    }
+
+
+
 }

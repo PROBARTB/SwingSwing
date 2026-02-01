@@ -67,46 +67,19 @@ public class BuilderTest3D implements Builder {
         RenderingObject cube3 = new RenderingObject(cubeGeoAlpha, t3);
         objects.put("cube3", cube3);
 
+        Transform tf = new Transform();
+        tf.setPos(new Vec3(0, 0, 0));
+        tf.setSize(new Vec3(1, 1, 1));
+        tf.setRot(Quaternion.fromEuler(new Vec3(0, 0, 0)));
+        RenderingObject filler = new RenderingObject(cubeGeoColored, tf);
+
         Transform tlpos = new Transform(new Vec3(1, 1, 0), Quaternion.fromEuler(new Vec3(Math.toRadians(0), Math.toRadians(0), Math.toRadians(0))));
         Transform tlts = new Transform(new Vec3(0, 0, 0), Quaternion.fromEuler(new Vec3(Math.toRadians(0), Math.toRadians(0), Math.toRadians(0))));
         Transform tlte = new Transform(new Vec3(3, 0, 1), Quaternion.fromEuler(new Vec3(Math.toRadians(0), Math.toRadians(0), Math.toRadians(0))));
-        LineGeometry testLineGeo = new StraightLineGeometry(tlts, tlte);
-        Line testLine = new Line(testLineGeo, null, tlpos, FillMode.STRETCH, new Color(0xffffffff, true));
+        StraightLineGeometry testLineGeo = new StraightLineGeometry(tlts, tlte);
+        Line<StraightLineGeometry> testLine = new Line<StraightLineGeometry>(testLineGeo, filler, tlpos, FillMode.STRETCH, new Color(0xffffffff, true));
         objects.put("testLine", testLine);
 
-//        CuboidSurface s1 = new CuboidSurface(CuboidFaceType.FRONT, TextureManager.getTexture("assets\\texture.png"), Color.PINK);
-//        Rectangle rect1 = new Rectangle(new Transform(), s1);
-//        rect1.getTransform().setPos(new Vec3(0, 0, 7));
-//        rect1.getTransform().setSize(new Vec3(14, 2, 0));
-//        rect1.getTransform().setRot(Quaternion.fromEuler(new Vec3(0, 0, 0)));
-//        objects.put("bgrect1", rect1);
-//
-//        Rectangle rect2 = new Rectangle(new Transform(), s1);
-//        rect2.getTransform().setPos(new Vec3(7, 0, 0));
-//        rect2.getTransform().setSize(new Vec3(14, 2, 0));
-//        rect2.getTransform().setRot(Quaternion.fromEuler(new Vec3(Math.toRadians(-90), 0, 0)));
-//        objects.put("bgrect2", rect2);
-//
-//        Rectangle rect3 = new Rectangle(new Transform(), s1);
-//        rect3.getTransform().setPos(new Vec3(0, 0, -7));
-//        rect3.getTransform().setSize(new Vec3(14, 2, 0));
-//        rect3.getTransform().setRot(Quaternion.fromEuler(new Vec3(Math.toRadians(180), 0, 0)));
-//        objects.put("bgrect3", rect3);
-//
-//        Rectangle rect4 = new Rectangle(new Transform(), s1);
-//        rect4.getTransform().setPos(new Vec3(-7, 0, 0));
-//        rect4.getTransform().setSize(new Vec3(14, 2, 0));
-//        rect4.getTransform().setRot(Quaternion.fromEuler(new Vec3(Math.toRadians(90), 0, 0)));
-//        objects.put("bgrect4", rect4);
-//
-//        StraightLine lineS1 = new StraightLine(new Vec3(-3, 0, -2), new Vec3(-1, 0, 0), Color.CYAN);
-//        objects.put("lineS1", lineS1);
-//
-//        CurvedLine lineC1 = new CurvedLine(
-//                new Transform(new Vec3(-1, 0, 0), Quaternion.fromEuler(new Vec3(Math.toRadians(315), 0, 0)), new Vec3(2, 0, 0)),
-//                new Transform(new Vec3(1, 0, 2), Quaternion.fromEuler(new Vec3(0, 0, 0)), new Vec3(2, 0, 0)),
-//                0.75, Color.YELLOW);
-//        objects.put("lineC1", lineC1);
     }
 
     @Override
@@ -117,6 +90,9 @@ public class BuilderTest3D implements Builder {
         //for (Cuboid cube : cuboids.values()) {
         RenderingObject obj = objects.get("cubeWithCamera");
         obj.getTransform().rotateEuler(new Vec3(deltaRotation, 0, 0));
+
+        RenderingObject obj1 = objects.get("rotatingCube1");
+        obj1.getTransform().rotateEuler(new Vec3(0, deltaRotation*0.5, deltaRotation*0.5));
         //}
     }
 

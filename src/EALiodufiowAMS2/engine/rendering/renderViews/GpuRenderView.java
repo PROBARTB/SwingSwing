@@ -1,6 +1,6 @@
 package EALiodufiowAMS2.engine.rendering.renderViews;
 
-import EALiodufiowAMS2.engine.rendering.graphicsRenderers.GpuBackend;
+import EALiodufiowAMS2.engine.rendering.graphicsRenderers.gpu.GpuBackend;
 
 
 import javax.swing.*;

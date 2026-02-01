@@ -2,8 +2,10 @@ package EALiodufiowAMS2.general.scene.scenes;
 
 import EALiodufiowAMS2.engine.Camera;
 import EALiodufiowAMS2.engine.Scene;
+import EALiodufiowAMS2.engine.rendering.TextureManager;
 import EALiodufiowAMS2.engine.rendering.renderingObject.Material;
 import EALiodufiowAMS2.engine.rendering.renderingObject.RenderingObject;
+import EALiodufiowAMS2.engine.rendering.renderingObject.TextureMode;
 import EALiodufiowAMS2.engine.uiRendering.UiOverlay;
 import EALiodufiowAMS2.game.builders.BuilderTest3D;
 import EALiodufiowAMS2.general.LayoutContext;
@@ -32,7 +34,7 @@ public class DebugScenePanel extends ScenePanel {
                 new Vec3(0, 0, -5),
                 new Vec3(Math.toRadians(0), Math.toRadians(0), Math.toRadians(0)),
                 75);
-        this.sceneData = new Scene(new Material(new Color(0xff888888, true)));
+        this.sceneData = new Scene(new Material(new Color(0xff888888, true), TextureManager.getTexture("assets\\jaruzelski.jpg"), TextureMode.TILE_FIT));
 
         Transform staticTransform = new Transform();
         staticTransform.setPos(new Vec3(0, 0, -5));

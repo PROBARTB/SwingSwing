@@ -1,12 +1,10 @@
 package EALiodufiowAMS2.engine.rendering.renderViews;
 
 import EALiodufiowAMS2.engine.rendering.GpuInfo;
-import EALiodufiowAMS2.engine.rendering.graphicsRenderers.GpuBackend;
+import EALiodufiowAMS2.engine.rendering.graphicsRenderers.gpu.GpuBackend;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.awt.AWTGLCanvas;
 import org.lwjgl.opengl.awt.GLData;
-
-import java.awt.*;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL11.GL_VERSION;

@@ -572,6 +572,7 @@ import java.util.List;
           this.renderingEngine.setListener(new RenderingEngineListener() {
               @Override public void onBackendInitialized() {
                   SwingUtilities.invokeLater(() -> {
+                      if(gpuInfoUiOverlayElement == null) return;
                       ((JLabel) gpuInfoUiOverlayElement.getComponent()).setText("GPU: " + renderingEngine.getCurrentGpuInfo().renderer());
                       uiOverlayEngine.updateElement(gpuInfoUiOverlayElement);
                   });
@@ -648,13 +649,13 @@ import java.util.List;
       }
 
     private void updateFpsOverlay() {
-        if (fpsUiOverlayElement != null && renderLoop != null) {
+        if (uiOverlayEngine != null && fpsUiOverlayElement != null && renderLoop != null) {
             ((JLabel) fpsUiOverlayElement.getComponent()).setText(String.format("FPS: %.1f", renderLoop.getCurrentFps()));
             uiOverlayEngine.updateElement(fpsUiOverlayElement);
         }
     }
     private void updateCamInfoOverlay() {
-        if (camInfoUiOverlayElement != null && camera != null) {
+        if (uiOverlayEngine != null && camInfoUiOverlayElement != null && camera != null) {
             ((JLabel) camInfoUiOverlayElement.getComponent()).setText("Cam: " + camera.getTransform().toString());
             uiOverlayEngine.updateElement(camInfoUiOverlayElement);
         }

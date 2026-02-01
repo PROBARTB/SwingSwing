@@ -1,7 +1,7 @@
 package EALiodufiowAMS2.engine.rendering;
 
-import EALiodufiowAMS2.engine.rendering.graphicsRenderers.CpuBackend;
-import EALiodufiowAMS2.engine.rendering.graphicsRenderers.GpuBackend;
+import EALiodufiowAMS2.engine.rendering.graphicsRenderers.cpu.CpuBackend;
+import EALiodufiowAMS2.engine.rendering.graphicsRenderers.gpu.GpuBackend;
 import EALiodufiowAMS2.engine.rendering.graphicsRenderers.RenderBackend;
 import EALiodufiowAMS2.engine.rendering.objectRenderers.DefaultRenderingObjectRenderer;
 import EALiodufiowAMS2.engine.rendering.objectRenderers.LineRenderingObjectRenderer;
