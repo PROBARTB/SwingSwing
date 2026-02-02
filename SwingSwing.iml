@@ -10,38 +10,14 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://$USER_HOME$/Downloads/lwjgl3-awt-main/target/lwjgl3-awt-0.2.3.jar!/" />
+          <root url="file://$MODULE_DIR$/externalLibrariesPack" />
         </CLASSES>
         <JAVADOC />
         <SOURCES>
-          <root url="jar://$USER_HOME$/Downloads/lwjgl3-awt-main/target/lwjgl3-awt-0.2.3-sources.jar!/" />
+          <root url="file://$MODULE_DIR$/externalLibrariesPack" />
         </SOURCES>
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="file://$USER_HOME$/Downloads/java open gl pain/lwjgl-release-3.3.6-custom" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES>
-          <root url="file://$USER_HOME$/Downloads/java open gl pain/lwjgl-release-3.3.6-custom" />
-        </SOURCES>
-        <jarDirectory url="file://$USER_HOME$/Downloads/java open gl pain/lwjgl-release-3.3.6-custom" recursive="false" />
-        <jarDirectory url="file://$USER_HOME$/Downloads/java open gl pain/lwjgl-release-3.3.6-custom" recursive="false" type="SOURCES" />
-      </library>
-    </orderEntry>
-    <orderEntry type="module-library" exported="">
-      <library>
-        <CLASSES>
-          <root url="file://$USER_HOME$/Downloads/current_JARs" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES>
-          <root url="file://$USER_HOME$/Downloads/current_JARs" />
-        </SOURCES>
-        <jarDirectory url="file://$USER_HOME$/Downloads/current_JARs" recursive="false" />
-        <jarDirectory url="file://$USER_HOME$/Downloads/current_JARs" recursive="false" type="SOURCES" />
+        <jarDirectory url="file://$MODULE_DIR$/externalLibrariesPack" recursive="false" />
+        <jarDirectory url="file://$MODULE_DIR$/externalLibrariesPack" recursive="false" type="SOURCES" />
       </library>
     </orderEntry>
   </component>

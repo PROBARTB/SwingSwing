@@ -482,6 +482,8 @@ import java.util.List;
       protected boolean paused = false;
       private RenderLoop renderLoop;
 
+      private double ss = 1.0;
+
       private UiOverlay overlay;
       private UiOverlayElement fpsUiOverlayElement;
       private UiOverlayElement gpuInfoUiOverlayElement;
@@ -518,13 +520,13 @@ import java.util.List;
 
           this.settingsApplier = new SettingsApplier(this, renderLoop);
 
-
       }
 
 
       public void onShown() {
           if (renderLoop != null && !renderLoop.isRunning()) renderLoop.start();
           recreateOverlay();
+          this.settingsApplier.apply(settingsManager.getCurrent());
       }
       public void onHidden() {
           if (renderLoop != null && renderLoop.isRunning()) renderLoop.stop();
@@ -549,7 +551,7 @@ import java.util.List;
           //System.out.println(deltaTime);
 
           if (!paused) {
-              updateScene(deltaTime);
+              updateScene(deltaTime*this.ss);
               if (camera != null) camera.update();
           }
           if (renderingEngine != null) renderingEngine.renderFrame();
@@ -708,11 +710,13 @@ import java.util.List;
 
         public void apply(Settings newSettings) {
             GraphicsSettings g = newSettings.getGraphics();
+            GameplaySettings ą = newSettings.getGameplay();
             UiSettings ui = newSettings.getUi();
 
             if (requiresReinit(g)) reinitRenderingEngine(g);
 
             applyResolutionMode(g);
+            applyGameplaySettings(ą);
             applyCameraSettings(g);
             applyUiSettings(ui);
             applyFpsLimit(g);
@@ -734,6 +738,10 @@ import java.util.List;
             return false;
         }
 
+        private void applyGameplaySettings(GameplaySettings ą) {
+            panel.ss = ą.getSimulationSpeed();
+        }
+
         private void applyResolutionMode(GraphicsSettings g) {
             if (renderingEngine == null) return;
             if (g.getRenderResolutionMode() == ResolutionMode.AUTO) renderingEngine.resize(getWidth(), getHeight());
@@ -744,7 +752,7 @@ import java.util.List;
             Camera cam = camera;
             if (cam == null) return;
 
-            cam.setFov(g.getFov());
+            if(cam.getFov() != g.getFov()) cam.setFov(g.getFov());
 
             if (g.getRenderResolutionMode() == ResolutionMode.AUTO) {
                 cam.setSize(getWidth() / Units.M_TO_PX, getHeight() / Units.M_TO_PX);
@@ -757,7 +765,7 @@ import java.util.List;
             if (fpsUiOverlayElement != null) {
                 fpsUiOverlayElement.getComponent().setVisible(ui.isShowFps());
             }
-            overlay.getLayer("debugInfoLayer").setVisible(ui.isShowDebugInfo());
+            if(overlay != null) overlay.getLayer("debugInfoLayer").setVisible(ui.isShowDebugInfo());
         }
 
         private void applyFpsLimit(GraphicsSettings g) {

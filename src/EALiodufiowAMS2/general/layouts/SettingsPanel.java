@@ -159,7 +159,7 @@ public class SettingsPanel extends JPanel {
 
             renderingModeCombo = new JComboBox<>(RenderingMode.values());
             windowModeCombo = new JComboBox<>(WindowMode.values());
-            fpsLimitSpinner = new JSpinner(new SpinnerNumberModel(60, 15, 240, 1));
+            fpsLimitSpinner = new JSpinner(new SpinnerNumberModel(60, 15, 360, 1));
 
             panel.add(new JLabel("Rendering mode:"), gbc);
             gbc.gridx = 1;
@@ -557,7 +557,7 @@ public class SettingsPanel extends JPanel {
             g2.insets = new Insets(4, 4, 4, 4);
             g2.anchor = GridBagConstraints.WEST;
 
-            simulationSpeedSpinner = new JSpinner(new SpinnerNumberModel(1.0, 0.1, 5.0, 0.1));
+            simulationSpeedSpinner = new JSpinner(new SpinnerNumberModel(1.0, 0.1, 50, 0.05));
 
             gameplaySection.add(new JLabel("Simulation speed:"), g2);
             g2.gridx = 1;

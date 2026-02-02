@@ -34,7 +34,7 @@ public class DebugScenePanel extends ScenePanel {
                 new Vec3(0, 0, -5),
                 new Vec3(Math.toRadians(0), Math.toRadians(0), Math.toRadians(0)),
                 75);
-        this.sceneData = new Scene(new Material(new Color(0xff888888, true), TextureManager.getTexture("assets\\jaruzelski.jpg"), TextureMode.TILE_FIT));
+        this.sceneData = new Scene(new Material(new Color(0xff888888, true), TextureManager.getTexture("assets\\jaruzelski.jpg"), TextureMode.STRETCH));
 
         Transform staticTransform = new Transform();
         staticTransform.setPos(new Vec3(0, 0, -5));
