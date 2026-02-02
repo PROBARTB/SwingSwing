@@ -320,7 +320,15 @@ public class PiotrostalObjectBuilder implements Builder {
                 new CubeTextureInfo("assets/Piotrostal/ep07_2.jpg", CubeType.RATRYS),
                 new CubeTextureInfo("assets/Piotrostal/et22_1.jpg", CubeType.RATRYS),
                 new CubeTextureInfo("assets/Piotrostal/et22_2.jpg", CubeType.RATRYS),
-                new CubeTextureInfo("assets/Piotrostal/ep07_1z.jpg", CubeType.NORMAL)
+                new CubeTextureInfo("assets/Piotrostal/ep07_1z.jpg", CubeType.NORMAL),
+                new CubeTextureInfo("assets/Piotrostal/ew60_1.jpg", CubeType.RATRYS),
+                new CubeTextureInfo("assets/Piotrostal/eu160_1z.jpg", CubeType.NORMAL),
+                new CubeTextureInfo("assets/Piotrostal/eu200_1z.jpg", CubeType.NORMAL),
+                new CubeTextureInfo("assets/Piotrostal/29we_1z.jpg", CubeType.NORMAL),
+                new CubeTextureInfo("assets/Piotrostal/su160_1z.jpg", CubeType.NORMAL),
+                new CubeTextureInfo("assets/Piotrostal/ep09_1z.jpg", CubeType.NORMAL),
+                new CubeTextureInfo("assets/Piotrostal/ep09_1.jpg", CubeType.RATRYS),
+                new CubeTextureInfo("assets/Piotrostal/ed160_1z.jpg", CubeType.NORMAL)
         };
 
         private final String[] bonusTextures = {
