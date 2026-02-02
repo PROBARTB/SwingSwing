@@ -17,10 +17,9 @@ import java.util.List;
 
 public class PiotrostalObjectBuilder implements Builder {
 
-    // pomocnicza klasa do przechowywania info o teksturze i typie pojazdu
     private static class CubeTextureInfo {
         String path;
-        String type; // "normal" albo "ratrys"
+        String type;
 
         CubeTextureInfo(String path, String type) {
             this.path = path;
@@ -32,14 +31,14 @@ public class PiotrostalObjectBuilder implements Builder {
     private final Map<String, CubeTextureInfo> cubeInfoMap = new HashMap<>();
     private final Deque<String> spawnedCubeIds = new ArrayDeque<>();
 
+    // animacja zgniatania
+    private final Map<String, Double> shrinkingCubes = new HashMap<>();
+
     private final Random random = new Random();
     private int cubeCounter = 0;
 
-    private int score = 0; // punkty gracza
+    private int score = 0;
 
-    // ---------------------------------------------------------
-    // TABLICA TEKSTUR — dodaj tu swoje pliki
-    // ---------------------------------------------------------
     private final CubeTextureInfo[] cubeTextures = {
             new CubeTextureInfo("assets/Piotrostal/ep07_1.jpg", "normal"),
             new CubeTextureInfo("assets/Piotrostal/ep07_2.jpg", "normal"),
@@ -48,13 +47,8 @@ public class PiotrostalObjectBuilder implements Builder {
     };
 
     public PiotrostalObjectBuilder() {
-        // Tworzymy pierwszą kostkę
         spawnCubeInternal();
     }
-
-    // ---------------------------------------------------------
-    // TWORZENIE NOWEJ KOSTKI (losowa tekstura dla wszystkich ścian)
-    // ---------------------------------------------------------
 
     private void spawnCubeInternal() {
         CubeTextureInfo chosen = cubeTextures[random.nextInt(cubeTextures.length)];
@@ -84,17 +78,13 @@ public class PiotrostalObjectBuilder implements Builder {
         String id = "spawnedCube_" + cubeCounter++;
         objects.put(id, newCube);
         cubeInfoMap.put(id, chosen);
-        spawnedCubeIds.push(id); // LIFO
+        spawnedCubeIds.push(id);
     }
-
-    // ---------------------------------------------------------
-    // FUNKCJA WYWOŁYWANA PO KLIKNIĘCIU PRZYCISKU
-    // ---------------------------------------------------------
 
     public void spawnNextCube() {
         if (!spawnedCubeIds.isEmpty()) {
             String lastId = spawnedCubeIds.pop();
-            scrapCube(lastId); // złomowanie = punkty
+            scrapCube(lastId);
         } else {
             System.out.println("Brak kostek do złomowania!");
         }
@@ -102,8 +92,18 @@ public class PiotrostalObjectBuilder implements Builder {
     }
 
     private void scrapCube(String id) {
+        RenderingObject obj = objects.get(id);
+        CubeTextureInfo info = cubeInfoMap.get(id);
+
+        if (obj != null && info != null) {
+            shrinkingCubes.put(id, 1.0); // start zgniatania
+        }
+    }
+
+    private void finishScrap(String id) {
         RenderingObject obj = objects.remove(id);
         CubeTextureInfo info = cubeInfoMap.remove(id);
+        shrinkingCubes.remove(id);
 
         if (obj != null && info != null) {
             if ("ratrys".equals(info.type)) {
@@ -118,21 +118,48 @@ public class PiotrostalObjectBuilder implements Builder {
     public int getScore() { return score; }
     public String getScoreText() { return "Punkty: " + score; }
 
-
-    // ---------------------------------------------------------
-    // UPDATE – obracanie nowych kostek
-    // ---------------------------------------------------------
-
     @Override
     public void update(double deltaTime) {
+
         double rotationSpeed = 2 * Math.PI / 10;
         double deltaRotation = rotationSpeed * deltaTime;
 
+        // obracamy tylko te, które nie są zgniatane
         for (String id : spawnedCubeIds) {
+            if (!shrinkingCubes.containsKey(id)) {
+                RenderingObject cube = objects.get(id);
+                if (cube != null) {
+                    cube.getTransform().rotateEuler(new Vec3(0, deltaRotation, 0));
+                }
+            }
+        }
+
+        // animacja zgniatania
+        double shrinkSpeed = 1.5;
+
+        List<String> toRemove = new ArrayList<>();
+
+        for (Map.Entry<String, Double> entry : shrinkingCubes.entrySet()) {
+            String id = entry.getKey();
+            double ySize = entry.getValue();
+
+            ySize -= shrinkSpeed * deltaTime;
+
             RenderingObject cube = objects.get(id);
             if (cube != null) {
-                cube.getTransform().rotateEuler(new Vec3(0, deltaRotation, 0));
+                double clampedY = Math.max(ySize, 0);
+                cube.getTransform().setSize(new Vec3(1, clampedY, 1)); // ZGNIATANIE TYLKO W PIONIE
             }
+
+            if (ySize <= 0) {
+                toRemove.add(id);
+            } else {
+                shrinkingCubes.put(id, ySize);
+            }
+        }
+
+        for (String id : toRemove) {
+            finishScrap(id);
         }
     }
 
