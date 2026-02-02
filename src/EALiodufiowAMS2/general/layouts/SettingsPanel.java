@@ -83,6 +83,7 @@ public class SettingsPanel extends JPanel {
         private JComboBox<RenderingMode> renderingModeCombo;
         private JComboBox<WindowMode> windowModeCombo;
         private JSpinner fpsLimitSpinner;
+        private JCheckBox reducedMultithreadingCheckBox;
 
         // Window resolution
         private JRadioButton windowAutoRadio;
@@ -160,6 +161,7 @@ public class SettingsPanel extends JPanel {
             renderingModeCombo = new JComboBox<>(RenderingMode.values());
             windowModeCombo = new JComboBox<>(WindowMode.values());
             fpsLimitSpinner = new JSpinner(new SpinnerNumberModel(60, 15, 360, 1));
+            reducedMultithreadingCheckBox = new JCheckBox("Reduced Multithreading (recommended)");
 
             panel.add(new JLabel("Rendering mode:"), gbc);
             gbc.gridx = 1;
@@ -181,6 +183,10 @@ public class SettingsPanel extends JPanel {
             gbc.gridx = 1;
             gbc.fill = GridBagConstraints.HORIZONTAL;
             panel.add(fpsLimitSpinner, gbc);
+
+            gbc.gridx = 0;
+            gbc.gridy++;
+            panel.add(reducedMultithreadingCheckBox, gbc);
 
             return panel;
         }
@@ -425,6 +431,7 @@ public class SettingsPanel extends JPanel {
             // Rendering
             renderingModeCombo.setSelectedItem(g.getRenderingMode());
             windowModeCombo.setSelectedItem(g.getWindowMode());
+            reducedMultithreadingCheckBox.setSelected(g.getReducedMultithreading());
             fpsLimitSpinner.setValue(g.getFpsLimit());
 
             // Window resolution
@@ -476,6 +483,7 @@ public class SettingsPanel extends JPanel {
             int fov = fovSlider.getValue();
             RenderingMode mode = (RenderingMode) renderingModeCombo.getSelectedItem();
             WindowMode windowMode = (WindowMode) windowModeCombo.getSelectedItem();
+            boolean reducedMultithreading = reducedMultithreadingCheckBox.isSelected();
             int fpsLimit = (Integer) fpsLimitSpinner.getValue();
 
             // Window resolution
@@ -524,6 +532,7 @@ public class SettingsPanel extends JPanel {
                     renderHeight,
                     renderResMode,
                     windowMode,
+                    reducedMultithreading,
                     fpsLimit,
                     curveQuality,
                     secondaryQuality

@@ -3,8 +3,15 @@ package EALiodufiowAMS2.engine.rendering.renderViews;
 import EALiodufiowAMS2.engine.rendering.GpuInfo;
 import EALiodufiowAMS2.engine.rendering.graphicsRenderers.gpu.GpuBackend;
 import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.awt.AWTGLCanvas;
 import org.lwjgl.opengl.awt.GLData;
+
+import java.awt.*;
+import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL11.GL_VERSION;
@@ -32,10 +39,17 @@ public final class GlRenderCanvas extends AWTGLCanvas {
         GL.createCapabilities();
         backend.setGpuInfo(new GpuInfo(glGetString(GL_RENDERER), glGetString(GL_VENDOR), glGetString(GL_VERSION)));
         backend.init();
+        synchronized (initLock){ inited = true;}
     }
+
+    private final Object initLock = new Object();
+    private volatile boolean inited = false;
 
     @Override
     public void paintGL() {
+        synchronized (initLock){ if(!inited) return;}
+        //System.out.println("paintGL Thread = " + Thread.currentThread().getName());
+
         backend.drawPreparedFrame();
         swapBuffers();
     }

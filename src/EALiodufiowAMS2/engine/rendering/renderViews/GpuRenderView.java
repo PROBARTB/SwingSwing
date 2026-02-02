@@ -12,6 +12,7 @@ public final class GpuRenderView extends JComponent implements RenderView {
     public GpuRenderView(GpuBackend backend) {
         setLayout(new BorderLayout());
         this.canvas = new GlRenderCanvas(backend);
+        setDoubleBuffered(false);
 
         add(canvas, BorderLayout.CENTER);
 

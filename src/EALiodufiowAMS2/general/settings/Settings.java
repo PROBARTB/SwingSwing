@@ -55,6 +55,7 @@ public final class Settings {
             height,
             ResolutionMode.AUTO,
             WindowMode.WINDOWED,
+            true,
             60,
             1.0,
             0.5

@@ -489,6 +489,8 @@ import java.util.List;
       private UiOverlayElement gpuInfoUiOverlayElement;
       private UiOverlayElement camInfoUiOverlayElement;
 
+      private boolean isReducedMultithreading = true;
+
       protected ScenePanel(LayoutContext layoutContext) {
           this.settingsManager = layoutContext.getSettingsManager();
           this.navigation = layoutContext.getNavigation();
@@ -555,7 +557,10 @@ import java.util.List;
               if (camera != null) camera.update();
           }
           if (renderingEngine != null) renderingEngine.renderFrame();
-          if (renderView != null) SwingUtilities.invokeLater(renderView::repaintView);
+          if (renderView != null){
+              if(isReducedMultithreading) SwingUtilities.invokeLater(renderView::repaintView);
+              else renderView.repaintView();
+          }
 
           SwingUtilities.invokeLater(() -> {
               updateFpsOverlay();
@@ -720,6 +725,8 @@ import java.util.List;
             applyCameraSettings(g);
             applyUiSettings(ui);
             applyFpsLimit(g);
+
+            panel.isReducedMultithreading = g.getReducedMultithreading();
         }
 
         private boolean requiresReinit(GraphicsSettings g) {

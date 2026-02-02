@@ -19,6 +19,7 @@ public final class GraphicsSettings {
 
     private final WindowMode windowMode;
 
+    private final boolean reducedMultithreading;
     private final int fpsLimit;
     private final double curveQuality;
     private final double secondarySceneQuality;
@@ -33,6 +34,7 @@ public final class GraphicsSettings {
             int renderHeight,
             ResolutionMode renderResolutionMode,
             WindowMode windowMode,
+            boolean reducedMultithreading,
             int fpsLimit,
             double curveQuality,
             double secondarySceneQuality
@@ -46,6 +48,7 @@ public final class GraphicsSettings {
         this.renderHeight = renderHeight;
         this.renderResolutionMode = renderResolutionMode;
         this.windowMode = windowMode;
+        this.reducedMultithreading = reducedMultithreading;
         this.fpsLimit = fpsLimit;
         this.curveQuality = curveQuality;
         this.secondarySceneQuality = secondarySceneQuality;
@@ -64,6 +67,7 @@ public final class GraphicsSettings {
 
     public WindowMode getWindowMode() { return windowMode; }
 
+    public boolean getReducedMultithreading() { return reducedMultithreading; }
     public int getFpsLimit() { return fpsLimit; }
     public double getCurveQuality() { return curveQuality; }
     public double getSecondarySceneQuality() { return secondarySceneQuality; }
@@ -73,56 +77,56 @@ public final class GraphicsSettings {
         return new GraphicsSettings(fov, renderingMode,
                 windowWidth, windowHeight, windowResolutionMode,
                 renderWidth, renderHeight, renderResolutionMode,
-                windowMode, fpsLimit, curveQuality, secondarySceneQuality);
+                windowMode, reducedMultithreading, fpsLimit, curveQuality, secondarySceneQuality);
     }
 
     public GraphicsSettings withRenderingMode(RenderingMode mode) {
         return new GraphicsSettings(fov, mode,
                 windowWidth, windowHeight, windowResolutionMode,
                 renderWidth, renderHeight, renderResolutionMode,
-                windowMode, fpsLimit, curveQuality, secondarySceneQuality);
+                windowMode, reducedMultithreading, fpsLimit, curveQuality, secondarySceneQuality);
     }
 
     public GraphicsSettings withWindowResolution(int width, int height, ResolutionMode mode) {
         return new GraphicsSettings(fov, renderingMode,
                 width, height, mode,
                 renderWidth, renderHeight, renderResolutionMode,
-                windowMode, fpsLimit, curveQuality, secondarySceneQuality);
+                windowMode, reducedMultithreading, fpsLimit, curveQuality, secondarySceneQuality);
     }
 
     public GraphicsSettings withRenderResolution(int width, int height, ResolutionMode mode) {
         return new GraphicsSettings(fov, renderingMode,
                 windowWidth, windowHeight, windowResolutionMode,
                 width, height, mode,
-                windowMode, fpsLimit, curveQuality, secondarySceneQuality);
+                windowMode, reducedMultithreading, fpsLimit, curveQuality, secondarySceneQuality);
     }
 
     public GraphicsSettings withWindowMode(WindowMode mode) {
         return new GraphicsSettings(fov, renderingMode,
                 windowWidth, windowHeight, windowResolutionMode,
                 renderWidth, renderHeight, renderResolutionMode,
-                mode, fpsLimit, curveQuality, secondarySceneQuality);
+                mode, reducedMultithreading, fpsLimit, curveQuality, secondarySceneQuality);
     }
 
     public GraphicsSettings withFpsLimit(int limit) {
         return new GraphicsSettings(fov, renderingMode,
                 windowWidth, windowHeight, windowResolutionMode,
                 renderWidth, renderHeight, renderResolutionMode,
-                windowMode, limit, curveQuality, secondarySceneQuality);
+                windowMode, reducedMultithreading, limit, curveQuality, secondarySceneQuality);
     }
 
     public GraphicsSettings withCurveQuality(int quality) {
         return new GraphicsSettings(fov, renderingMode,
                 windowWidth, windowHeight, windowResolutionMode,
                 renderWidth, renderHeight, renderResolutionMode,
-                windowMode, fpsLimit, quality, secondarySceneQuality);
+                windowMode, reducedMultithreading, fpsLimit, quality, secondarySceneQuality);
     }
 
     public GraphicsSettings withSecondarySceneQuality(int quality) {
         return new GraphicsSettings(fov, renderingMode,
                 windowWidth, windowHeight, windowResolutionMode,
                 renderWidth, renderHeight, renderResolutionMode,
-                windowMode, fpsLimit, curveQuality, quality);
+                windowMode, reducedMultithreading, fpsLimit, curveQuality, quality);
     }
 }
 

@@ -128,8 +128,34 @@ public final class GpuBackend implements RenderBackend {
     private final List<RenderItem> cutoutItems      = new ArrayList<>();
     private final List<RenderItem> transparentItems = new ArrayList<>();
 
+    private final Object renderLock = new Object();
+    private volatile boolean rendering = false;
 
     public void drawPreparedFrame() {
+//         synchronized (renderLock) {
+//             if (rendering) {
+//                 return;
+//             }
+//            rendering = true;
+//         }
+//         try {
+//             //System.out.println("Starting to drawPreparedFrame");
+//             System.out.println("drawPreparedFrame Thread = " + Thread.currentThread().getName());
+//
+//             doDrawPreparedFrame();
+//
+//             //System.out.println("Frame has been drawn drawPreparedFrame");
+//         } catch (Throwable e){
+//             e.printStackTrace();
+//         } finally {
+//             synchronized (renderLock) {
+//                 rendering = false;
+//             }
+//         }
+        doDrawPreparedFrame();
+    }
+
+    private void doDrawPreparedFrame() {
         if (camera == null || scene == null) {
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glViewport(0, 0, width, height);
@@ -144,17 +170,6 @@ public final class GpuBackend implements RenderBackend {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-//        Material voidMat = scene.getVoidMAterial();
-//        if (voidMat != null) {
-//            java.awt.Color c = voidMat.getColor();
-//            float r = c.getRed()   / 255.0f;
-//            float g = c.getGreen() / 255.0f;
-//            float b = c.getBlue()  / 255.0f;
-//            float a = c.getAlpha() / 255.0f;
-//            glClearColor(r, g, b, a);
-//        } else {
-//            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-//        }
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         Material voidMat = scene.getVoidMAterial();
