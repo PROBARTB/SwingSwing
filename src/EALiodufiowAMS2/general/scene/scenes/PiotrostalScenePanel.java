@@ -23,7 +23,8 @@ import java.util.Random;
 public class PiotrostalScenePanel extends ScenePanel {
 
     private final PiotrostalObjectBuilder piotrostalObjectBuilder = new PiotrostalObjectBuilder();
-    private JLabel scoreLabel;
+    private UiOverlayElement scoreLabelEl;
+    private UiOverlayElement changeLabelEl;
     private int lastScore = -1;
 
     public PiotrostalScenePanel(LayoutContext layoutContext) {
@@ -54,72 +55,106 @@ public class PiotrostalScenePanel extends ScenePanel {
 
     @Override
     protected void composeUiOverlay(UiOverlay overlay) {
-        UiOverlayLayer layer = overlay.getOrCreateLayer("cwel");
+        UiOverlayLayer layer = overlay.getOrCreateLayer("vel");
 
-        // --- Label "Punkty" ---
+        UiOverlayConstraints logoConstraints = new UiOverlayConstraints(
+                UiOverlayAnchor.TOP_CENTER, 0, 10, null, null, true
+        );
+        JLabel logoLabel = new JLabel(new ImageIcon("assets\\piotrostal\\logo.png"));
+        logoLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        layer.addElement(new UiOverlayElement(logoLabel, logoConstraints));
+
         UiOverlayConstraints titleConstraints = new UiOverlayConstraints(
-                UiOverlayAnchor.TOP_CENTER, 0, 20, null, null, true
+                UiOverlayAnchor.TOP_CENTER, 0, 100, null, null, true
+        );
+        JLabel titleLabel = new JLabel("Złomuj rarytasy aby otrzymać punkty!!");
+        titleLabel.setForeground(Color.WHITE);
+        titleLabel.setFont(new Font("Arial", Font.ITALIC, 20));
+        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        layer.addElement(new UiOverlayElement(titleLabel, titleConstraints));
+
+        UiOverlayConstraints punktyConstraints = new UiOverlayConstraints(
+                UiOverlayAnchor.TOP_CENTER, 0, 140, null, null, true
         );
         JLabel punktyLabel = new JLabel("Punkty");
         punktyLabel.setForeground(Color.WHITE);
         punktyLabel.setFont(new Font("Arial", Font.BOLD, 18));
         punktyLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        layer.addElement(new UiOverlayElement(punktyLabel, titleConstraints));
+        layer.addElement(new UiOverlayElement(punktyLabel, punktyConstraints));
 
-        // --- Label wynik ---
+
         UiOverlayConstraints scoreConstraints = new UiOverlayConstraints(
-                UiOverlayAnchor.TOP_CENTER, 0, 50, null, null, true
+                UiOverlayAnchor.TOP_CENTER, 0, 170, null, null, true
         );
-        scoreLabel = new JLabel(String.valueOf(piotrostalObjectBuilder.getScore()));
+        JLabel scoreLabel = new JLabel(String.valueOf(piotrostalObjectBuilder.getScore()));
         scoreLabel.setForeground(Color.WHITE);
-        scoreLabel.setFont(new Font("Arial", Font.BOLD, 22));
+        scoreLabel.setFont(new Font("Arial", Font.BOLD, 50));
         scoreLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        scoreLabel.setPreferredSize(new Dimension(200, 30)); // stała szerokość
-        layer.addElement(new UiOverlayElement(scoreLabel, scoreConstraints));
+        scoreLabel.setPreferredSize(new Dimension(200, 50));
+        scoreLabelEl = new UiOverlayElement(scoreLabel, scoreConstraints);
+        layer.addElement(scoreLabelEl);
 
-        // --- przycisk Złomuj ---
+        UiOverlayConstraints changeConstraints = new UiOverlayConstraints(
+                UiOverlayAnchor.TOP_CENTER, 120, 180, null, null, true
+        );
+        JLabel changeLabel = new JLabel("");
+        changeLabel.setFont(new Font("Arial", Font.BOLD, 30));
+        changeLabelEl = new UiOverlayElement(changeLabel, changeConstraints);
+        layer.addElement(changeLabelEl);
+
+
         UiOverlayConstraints buttonConstraints1 = new UiOverlayConstraints(
-                UiOverlayAnchor.TOP_CENTER, -60, 90, null, null, true
+                UiOverlayAnchor.TOP_CENTER, -60, 230, null, null, true
         );
         JButton zlomowanie = new JButton("Złomuj ratrys!");
         layer.addElement(new UiOverlayElement(zlomowanie, buttonConstraints1));
 
-        // --- przycisk Nie złomuj ---
         UiOverlayConstraints buttonConstraints2 = new UiOverlayConstraints(
-                UiOverlayAnchor.TOP_CENTER, 60, 90, null, null, true
+                UiOverlayAnchor.TOP_CENTER, 60, 230, null, null, true
         );
         JButton nieZlomuj = new JButton("Nie złomuj");
         layer.addElement(new UiOverlayElement(nieZlomuj, buttonConstraints2));
 
         zlomowanie.addActionListener(e -> {
-            List<String> ids = piotrostalObjectBuilder.getObjectIds();
-            if (!ids.isEmpty()) {
-                String lastId = ids.get(ids.size() - 1);
-                piotrostalObjectBuilder.scrapCube(lastId);
-                updateScoreLabel();
-                // ❌ NIE wołamy spawnNextCube tutaj
-            }
+            if(piotrostalObjectBuilder.isProcessing()) return;
+            String lastId = piotrostalObjectBuilder.getCurrentCubeId();
+            piotrostalObjectBuilder.scrapCube(lastId);
+            updateScoreLabel();
+            updateChangeLabel();
+
         });
 
 
         nieZlomuj.addActionListener(e -> {
-            List<String> ids = piotrostalObjectBuilder.getObjectIds();
-            if (!ids.isEmpty()) {
-                String lastId = ids.get(ids.size() - 1);
-                piotrostalObjectBuilder.evaporateCube(lastId);
-                updateScoreLabel();
-                piotrostalObjectBuilder.spawnNextCube(); // tu zostaje
-            }
+            if(piotrostalObjectBuilder.isProcessing()) return;
+            String lastId = piotrostalObjectBuilder.getCurrentCubeId();
+            piotrostalObjectBuilder.evaporateCube(lastId);
+            updateScoreLabel();
+            updateChangeLabel();
         });
-
-
 
     }
 
-
     private void updateScoreLabel() {
-        if (scoreLabel != null) {
-            scoreLabel.setText(String.valueOf(piotrostalObjectBuilder.getScore()));
+        if (uiOverlayEngine != null && scoreLabelEl != null) {
+            ((JLabel) scoreLabelEl.getComponent()).setText(String.valueOf(piotrostalObjectBuilder.getScore()));
+            uiOverlayEngine.updateElement(scoreLabelEl);
+        }
+    }
+
+    private void updateChangeLabel() {
+        if (uiOverlayEngine != null && changeLabelEl != null) {
+            int sc = piotrostalObjectBuilder.getLastScoreChange();
+            if (sc == 0) {
+                changeLabelEl.setConstraints(changeLabelEl.getConstraints().withVisibility(false));
+            } else {
+                changeLabelEl.setConstraints(changeLabelEl.getConstraints().withVisibility(true));
+            }
+            JLabel c = (JLabel) changeLabelEl.getComponent();
+            c.setForeground(sc < 0 ? Color.RED : Color.GREEN);
+            c.setText((sc < 0 ? "" : "+") + String.valueOf(sc));
+
+            uiOverlayEngine.updateElement(changeLabelEl);
         }
     }
 
@@ -127,11 +162,5 @@ public class PiotrostalScenePanel extends ScenePanel {
     protected void updateScene(double deltaTime) {
         piotrostalObjectBuilder.update(deltaTime);
         sceneData.setObjects(piotrostalObjectBuilder.getRenderingObjects());
-
-        int currentScore = piotrostalObjectBuilder.getScore();
-        if (currentScore != lastScore) {
-            updateScoreLabel();
-            lastScore = currentScore;
-        }
     }
 }

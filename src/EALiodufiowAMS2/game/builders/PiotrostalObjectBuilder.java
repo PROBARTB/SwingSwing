@@ -17,225 +17,220 @@ import java.util.List;
 
 public class PiotrostalObjectBuilder implements Builder {
 
-    private static class CubeTextureInfo {
-        String path;
-        String type; // "normal" albo "ratrys"
+    private final Map<String, GameObject> objects = new HashMap<>();
+    private final ObjectFactory factory = new ObjectFactory();
 
-        CubeTextureInfo(String path, String type) {
-            this.path = path;
-            this.type = type;
-        }
-    }
+    private String currentCubeId = null; // zawsze 1 aktywny cube (RATRYS/NORMAL)
+    private int idCounter = 0;
 
-    private final Map<String, RenderingObject> objects = new HashMap<>();
-    private final Map<String, CubeTextureInfo> cubeInfoMap = new HashMap<>();
-    private final Deque<String> spawnedCubeIds = new ArrayDeque<>();
+    private int bonusCounter = 0;
 
-    // animacja zgniatania
-    private final Map<String, Double> shrinkingCubes = new HashMap<>();
-
-    // bonusy
-    private final String[] bonusTextures = {
-            "assets/Piotrostal/bonus/bonus1.png",
-            "assets/Piotrostal/bonus/bonus2.png",
-            "assets/Piotrostal/bonus/bonus3.png"
-    };
-    private final Map<String, Double> bonusObjects = new HashMap<>();
-
-    private final Random random = new Random();
-    private int cubeCounter = 0;
-
+    private int lastScore = 0;
     private int score = 0;
+    private boolean isProcessing = false; // true tylko podczas animacji zgniatania
 
-    // flaga blokująca wielokrotne kliknięcia
-    private boolean isProcessing = false;
-
-    private final CubeTextureInfo[] cubeTextures = {
-            new CubeTextureInfo("assets/Piotrostal/ep07_1.jpg", "ratrys"),
-            new CubeTextureInfo("assets/Piotrostal/ep07_2.jpg", "ratrys"),
-            new CubeTextureInfo("assets/Piotrostal/et22_1.jpg", "ratrys"),
-            new CubeTextureInfo("assets/Piotrostal/et22_2.jpg", "ratrys"),
-            new CubeTextureInfo("assets/Piotrostal/ep07_1z.jpg", "zwykly")
-    };
+    private final double X_TARGET_ANIMATION = 50.0;
 
     public PiotrostalObjectBuilder() {
-        spawnCubeInternal();
+        spawnNewCube();
     }
 
-    private void spawnCubeInternal() {
-        CubeTextureInfo chosen = cubeTextures[random.nextInt(cubeTextures.length)];
+    private String nextId(String prefix) {
+        return prefix + "_" + (idCounter++);
+    }
 
-        List<CuboidSurface> newCuboidSurfaces = new ArrayList<>();
-        for (CuboidFaceType face : CuboidFaceType.values()) {
-            newCuboidSurfaces.add(
-                    new CuboidSurface(face, new Material(Color.WHITE, TextureManager.getTexture(chosen.path)))
-            );
-        }
+    private final Random random = new Random();
 
-        Geometry geo = new CuboidGeometry(newCuboidSurfaces);
+    private void spawnNewCube() {
+        String id = nextId("cube");
+        GameObject cube = factory.createCube(id);
 
-        Vec3 pos = new Vec3(
-                random.nextDouble() * 6 - 3,
-                random.nextDouble() * 3,
-                random.nextDouble() * 6 - 3
-        );
-
-        Transform t = new Transform();
+        // ustaw start na x = -100
+        Transform t = cube.render.getTransform();
+        Vec3 pos = t.getPos();
+        double targetX = pos.x;
+        pos.x = -X_TARGET_ANIMATION;
         t.setPos(pos);
-        t.setSize(new Vec3(1, 1, 1));
-        t.setRot(Quaternion.fromEuler(new Vec3(0, 0, 0)));
 
-        RenderingObject newCube = new RenderingObject(geo, t);
+        cube.moving = true;
+        cube.moveTargetX = targetX;
 
-        String id = "spawnedCube_" + cubeCounter++;
-        objects.put(id, newCube);
-        cubeInfoMap.put(id, chosen);
-        spawnedCubeIds.push(id);
+        objects.put(id, cube);
+        currentCubeId = id;
     }
+
+
+    private void spawnBonus() {
+        String id = nextId("bonus");
+        GameObject bonus = factory.createBonus(id);
+        objects.put(id, bonus);
+    }
+
+    // ---------------------------------------------------------
+    // PUBLIC API
+    // ---------------------------------------------------------
 
     public void spawnNextCube() {
-        if (isProcessing) {
-            return;
+        if (!isProcessing && currentCubeId == null) {
+            spawnNewCube();
         }
-        spawnCubeInternal();
+    }
+
+    public String getCurrentCubeId() {
+        return currentCubeId;
     }
 
     public void scrapCube(String id) {
-        spawnedCubeIds.remove(id);
+        GameObject obj = objects.get(id);
+        if (obj == null) return;
+        if (obj.isBonus()) return;
+        if (isProcessing) return;
 
-        RenderingObject obj = objects.get(id);
-        CubeTextureInfo info = cubeInfoMap.get(id);
-
-        if (obj == null || info == null) {
-            System.out.println("Nie znaleziono kostki o id: " + id);
-            return;
-        }
-
-        if ("ratrys".equals(info.type)) {
+        if (obj.type == CubeType.RATRYS) {
+            lastScore = score;
             score += 50;
-            System.out.println("Złomowano ratrysa, +50 punktów!");
-            spawnBonus();
-        } else {
+
+            bonusCounter++;
+            if(bonusCounter >= 5) {
+                spawnBonus();
+                bonusCounter = 0;
+            }
+        } else if (obj.type == CubeType.NORMAL) {
+            lastScore = score;
             score -= 20;
-            System.out.println("Złomowano zwykły, -20 punktów!");
+            bonusCounter = 0;
         }
-        shrinkingCubes.put(id, 1.0);
+
+        obj.shrinkValue = 1.0;
+        obj.moving = false;
         isProcessing = true;
     }
 
     public void evaporateCube(String id) {
-        spawnedCubeIds.remove(id);
+        GameObject obj = objects.get(id);
+        if (obj == null) return;
+        if (obj.isBonus()) return;
+        if (isProcessing) return;
 
-        RenderingObject obj = objects.remove(id);
-        CubeTextureInfo info = cubeInfoMap.remove(id);
-
-        if (obj == null || info == null) {
-            System.out.println("Nie znaleziono kostki o id: " + id);
-            isProcessing = false;
-            return;
-        }
-
-        if ("ratrys".equals(info.type)) {
-            score -= 20;
-            System.out.println("Pozostawiono ratrysa, -20 punktów!");
+        if (obj.type == CubeType.RATRYS) {
+            lastScore = score;
+            score -= 80;
         } else {
+            lastScore = score;
             score += 20;
-            System.out.println("Pozostawiono zwykły, +20 punktów!");
         }
-        isProcessing = false;
+
+        Transform t = obj.render.getTransform();
+        Vec3 pos = t.getPos();
+        obj.moving = true;
+        obj.moveTargetX = X_TARGET_ANIMATION;
+        obj.shrinkValue = -1.0;
     }
 
-    private void spawnBonus() {
-        String bonusPath = bonusTextures[random.nextInt(bonusTextures.length)];
-        Material bonusMat = new Material(Color.WHITE, TextureManager.getTexture(bonusPath));
-        Geometry bonusGeo = new CuboidGeometry(List.of(
-                new CuboidSurface(CuboidFaceType.FRONT, bonusMat)
-        ));
-
-        Vec3 pos = new Vec3(
-                random.nextDouble() * 6 - 3,
-                random.nextDouble() * 3,
-                random.nextDouble() * 6 - 3
-        );
-
-        Transform t = new Transform();
-        t.setPos(pos);
-        t.setSize(new Vec3(2, 2, 0.1)); // powiększone bonusy
-        t.setRot(Quaternion.fromEuler(new Vec3(0, 0, 0)));
-
-        RenderingObject bonusObj = new RenderingObject(bonusGeo, t);
-        String bonusId = "bonus_" + cubeCounter++;
-        objects.put(bonusId, bonusObj);
-        bonusObjects.put(bonusId, 3.0); // 3 sekundy życia
-    }
 
     public int getScore() { return score; }
-    public String getScoreText() { return "Punkty: " + score; }
+    public int getLastScoreChange() { return score - lastScore; }
     public boolean isProcessing() { return isProcessing; }
 
+    // ---------------------------------------------------------
+    // UPDATE LOOP
+    // ---------------------------------------------------------
+
     @Override
-    public void update(double deltaTime) {
-        double rotationSpeed = 2 * Math.PI / 10;
-        double deltaRotation = rotationSpeed * deltaTime;
+    public void update(double dt) {
+        updateRotation(dt);
+        updateShrinking(dt);
+        updateBonuses(dt);
+        updateMovement(dt);
+    }
 
-        for (String id : spawnedCubeIds) {
-            if (!shrinkingCubes.containsKey(id)) {
-                RenderingObject cube = objects.get(id);
-                if (cube != null) {
-                    cube.getTransform().rotateEuler(new Vec3(0, deltaRotation, 0));
-                }
-            }
-        }
+    private void updateRotation(double dt) {
+        if (currentCubeId == null) return;
 
-        double shrinkSpeed = 1.5;
-        List<String> toRemove = new ArrayList<>();
+        GameObject cube = objects.get(currentCubeId);
+        if (cube == null || cube.isShrinking()) return;
 
-        for (Map.Entry<String, Double> entry : shrinkingCubes.entrySet()) {
-            String id = entry.getKey();
-            double ySize = entry.getValue();
+        double rot = (2 * Math.PI / 10) * dt;
+        cube.render.getTransform().rotateEuler(new Vec3(rot, 0, 0));
+    }
 
-            ySize -= shrinkSpeed * deltaTime;
+    private void updateShrinking(double dt) {
+        if (currentCubeId == null) return;
 
-            RenderingObject cube = objects.get(id);
-            if (cube != null) {
-                double clampedY = Math.max(ySize, 0);
-                cube.getTransform().setSize(new Vec3(1, clampedY, 1));
-            }
+        GameObject cube = objects.get(currentCubeId);
+        if (cube == null || !cube.isShrinking()) return;
 
-            if (ySize <= 0) {
-                toRemove.add(id);
-            } else {
-                shrinkingCubes.put(id, ySize);
-            }
-        }
+        cube.shrinkValue -= 1.5 * dt;
+        double y = Math.max(cube.shrinkValue, 0);
+        cube.render.getTransform().setSize(new Vec3(1, y, 1));
 
-        for (String id : toRemove) {
-            objects.remove(id);
-            cubeInfoMap.remove(id);
-            shrinkingCubes.remove(id);
-        }
-
-        if (toRemove.size() > 0) {
+        if (cube.shrinkValue <= 0) {
+            // koniec animacji – cube znika
+            objects.remove(currentCubeId);
+            currentCubeId = null;
             isProcessing = false;
-            spawnCubeInternal();
-        }
 
-        // --- bonusy ---
-        List<String> expiredBonus = new ArrayList<>();
-        for (Map.Entry<String, Double> entry : bonusObjects.entrySet()) {
-            String id = entry.getKey();
-            double timeLeft = entry.getValue() - deltaTime;
-            if (timeLeft <= 0) {
-                expiredBonus.add(id);
-            } else {
-                bonusObjects.put(id, timeLeft);
-            }
-        }
-        for (String id : expiredBonus) {
-            objects.remove(id);
-            bonusObjects.remove(id);
+            // po zakończeniu animacji pojawia się nowy cube
+            spawnNewCube();
         }
     }
+
+    private void updateBonuses(double dt) {
+        List<String> expired = new ArrayList<>();
+
+        for (GameObject obj : objects.values()) {
+            if (!obj.isBonus()) continue;
+
+            obj.lifetime -= dt;
+            if (obj.lifetime <= 0) {
+                expired.add(obj.id);
+            }
+        }
+
+        for (String id : expired) {
+            objects.remove(id);
+        }
+    }
+
+    private void updateMovement(double dt) {
+        List<String> finished = new ArrayList<>();
+
+        for (GameObject obj : objects.values()) {
+            if (!obj.isMoving()) continue;
+
+            Transform t = obj.render.getTransform();
+            Vec3 pos = t.getPos();
+
+            double dx = obj.moveTargetX - pos.x;
+            double dir = Math.signum(dx);
+            double step = obj.moveSpeed * dt;
+            if (Math.abs(dx) <= step) {
+                pos.x = obj.moveTargetX;
+                t.setPos(pos);
+                finished.add(obj.id);
+            } else {
+                pos.x += dir * step;
+                t.setPos(pos);
+            }
+        }
+
+        for (String id : finished) {
+            GameObject obj = objects.get(id);
+            if (obj == null) continue;
+            obj.moving = false;
+
+            if (id.equals(currentCubeId) && Math.abs(obj.moveTargetX - X_TARGET_ANIMATION) < 0.001) {
+                objects.remove(id);
+                currentCubeId = null;
+                spawnNewCube();
+            }
+        }
+    }
+
+
+    // ---------------------------------------------------------
+    // BUILDER INTERFACE
+    // ---------------------------------------------------------
 
     @Override
     public List<String> getObjectIds() {
@@ -244,17 +239,152 @@ public class PiotrostalObjectBuilder implements Builder {
 
     @Override
     public List<RenderingObject> getRenderingObjects() {
-        return new ArrayList<>(objects.values());
+        return objects.values().stream()
+                .map(o -> o.render)
+                .toList();
     }
 
     @Override
     public RenderingObject buildRenderingObject(String id) {
-        return objects.get(id);
+        GameObject obj = objects.get(id);
+        return obj != null ? obj.render : null;
     }
 
     @Override
     public Transform getObjectTransform(String id) {
-        RenderingObject obj = objects.get(id);
-        return obj != null ? obj.getTransform() : null;
+        GameObject obj = objects.get(id);
+        return obj != null ? obj.render.getTransform() : null;
     }
+
+
+
+    private enum CubeType {
+        RATRYS,
+        NORMAL,
+        BONUS
+    }
+
+    private class CubeTextureInfo {
+        public final String path;
+        public final CubeType type;
+
+        public CubeTextureInfo(String path, CubeType type) {
+            this.path = path;
+            this.type = type;
+        }
+    }
+
+
+    public class GameObject {
+        public final String id;
+        public final CubeType type;
+        public final RenderingObject render;
+
+        // animacja zgniatania (scrap)
+        public double shrinkValue = -1.0; // < 0 = brak animacji
+
+        // animacja ruchu w osi X (spawn / evaporate)
+        public boolean moving = false;
+        public double moveTargetX = 0.0;
+        public double moveSpeed = 40.0; // jednostki na sekundę
+
+        // bonus lifetime
+        public double lifetime = -1.0; // tylko dla BONUS
+
+        public GameObject(String id, CubeType type, RenderingObject render) {
+            this.id = id;
+            this.type = type;
+            this.render = render;
+        }
+
+        public boolean isShrinking() {
+            return shrinkValue >= 0.0;
+        }
+
+        public boolean isMoving() {
+            return moving;
+        }
+
+        public boolean isBonus() {
+            return type == CubeType.BONUS;
+        }
+    }
+
+
+    public class ObjectFactory {
+
+        private final Random random = new Random();
+
+        private final CubeTextureInfo[] cubeTextures = {
+                new CubeTextureInfo("assets/Piotrostal/ep07_1.jpg", CubeType.RATRYS),
+                new CubeTextureInfo("assets/Piotrostal/ep07_2.jpg", CubeType.RATRYS),
+                new CubeTextureInfo("assets/Piotrostal/et22_1.jpg", CubeType.RATRYS),
+                new CubeTextureInfo("assets/Piotrostal/et22_2.jpg", CubeType.RATRYS),
+                new CubeTextureInfo("assets/Piotrostal/ep07_1z.jpg", CubeType.NORMAL)
+        };
+
+        private final String[] bonusTextures = {
+                "assets/Piotrostal/bonus/bonus1.png",
+                "assets/Piotrostal/bonus/bonus2.png",
+                "assets/Piotrostal/bonus/bonus3.png"
+        };
+
+        public GameObject createCube(String id) {
+            CubeTextureInfo tex = cubeTextures[random.nextInt(cubeTextures.length)];
+
+            List<CuboidSurface> surfaces = new ArrayList<>();
+            for (CuboidFaceType face : CuboidFaceType.values()) {
+                surfaces.add(new CuboidSurface(face,
+                        new Material(Color.WHITE, TextureManager.getTexture(tex.path))));
+            }
+            Geometry geo = new CuboidGeometry(surfaces);
+
+            Transform t = new Transform();
+            // docelowa pozycja (X losowy, Y/Z losowe)
+            Vec3 pos = new Vec3(
+                    random.nextDouble() * 6 - 3,
+                    random.nextDouble() * 3,
+                    random.nextDouble() * 6 - 3
+            );
+            t.setPos(pos);
+            t.setSize(new Vec3(1, 1, 1));
+            t.setRot(Quaternion.fromEuler(new Vec3(0, 0, 0)));
+
+            RenderingObject ro = new RenderingObject(geo, t);
+            GameObject obj = new GameObject(id, tex.type, ro);
+
+            return obj;
+        }
+
+        public GameObject createBonus(String id) {
+            String texPath = bonusTextures[random.nextInt(bonusTextures.length)];
+            Material mat = new Material(Color.WHITE, TextureManager.getTexture(texPath));
+            Geometry geo = new CuboidGeometry(List.of(
+                    new CuboidSurface(CuboidFaceType.FRONT, mat)
+            ));
+
+            Transform t = new Transform();
+            Vec3 pos = new Vec3(
+                    random.nextDouble() * 6 - 3,
+                    random.nextDouble() * 3,
+                    random.nextDouble() * 6 - 3
+            );
+            t.setPos(pos);
+            t.setSize(new Vec3(2, 2, 0.1));
+            t.setRot(Quaternion.fromEuler(new Vec3(0, Math.toRadians(10), 0)));
+
+            RenderingObject ro = new RenderingObject(geo, t);
+            GameObject obj = new GameObject(id, CubeType.BONUS, ro);
+            obj.lifetime = 3.0;
+
+            return obj;
+        }
+
+        public double randomTargetX() {
+            return random.nextDouble() * 6 - 3;
+        }
+    }
+
+
 }
+
