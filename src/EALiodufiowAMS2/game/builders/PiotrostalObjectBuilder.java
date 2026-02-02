@@ -19,7 +19,7 @@ public class PiotrostalObjectBuilder implements Builder {
 
     private static class CubeTextureInfo {
         String path;
-        String type;
+        String type; // "normal" albo "ratrys"
 
         CubeTextureInfo(String path, String type) {
             this.path = path;
@@ -34,16 +34,28 @@ public class PiotrostalObjectBuilder implements Builder {
     // animacja zgniatania
     private final Map<String, Double> shrinkingCubes = new HashMap<>();
 
+    // bonusy
+    private final String[] bonusTextures = {
+            "assets/Piotrostal/bonus/bonus1.png",
+            "assets/Piotrostal/bonus/bonus2.png",
+            "assets/Piotrostal/bonus/bonus3.png"
+    };
+    private final Map<String, Double> bonusObjects = new HashMap<>();
+
     private final Random random = new Random();
     private int cubeCounter = 0;
 
     private int score = 0;
 
+    // flaga blokująca wielokrotne kliknięcia
+    private boolean isProcessing = false;
+
     private final CubeTextureInfo[] cubeTextures = {
-            new CubeTextureInfo("assets/Piotrostal/ep07_1.jpg", "normal"),
-            new CubeTextureInfo("assets/Piotrostal/ep07_2.jpg", "normal"),
+            new CubeTextureInfo("assets/Piotrostal/ep07_1.jpg", "ratrys"),
+            new CubeTextureInfo("assets/Piotrostal/ep07_2.jpg", "ratrys"),
             new CubeTextureInfo("assets/Piotrostal/et22_1.jpg", "ratrys"),
             new CubeTextureInfo("assets/Piotrostal/et22_2.jpg", "ratrys"),
+            new CubeTextureInfo("assets/Piotrostal/ep07_1z.jpg", "zwykly")
     };
 
     public PiotrostalObjectBuilder() {
@@ -82,49 +94,90 @@ public class PiotrostalObjectBuilder implements Builder {
     }
 
     public void spawnNextCube() {
-        if (!spawnedCubeIds.isEmpty()) {
-            String lastId = spawnedCubeIds.pop();
-            scrapCube(lastId);
-        } else {
-            System.out.println("Brak kostek do złomowania!");
+        if (isProcessing) {
+            return;
         }
         spawnCubeInternal();
     }
 
-    private void scrapCube(String id) {
+    public void scrapCube(String id) {
+        spawnedCubeIds.remove(id);
+
         RenderingObject obj = objects.get(id);
         CubeTextureInfo info = cubeInfoMap.get(id);
 
-        if (obj != null && info != null) {
-            shrinkingCubes.put(id, 1.0); // start zgniatania
+        if (obj == null || info == null) {
+            System.out.println("Nie znaleziono kostki o id: " + id);
+            return;
         }
+
+        if ("ratrys".equals(info.type)) {
+            score += 50;
+            System.out.println("Złomowano ratrysa, +50 punktów!");
+            spawnBonus();
+        } else {
+            score -= 20;
+            System.out.println("Złomowano zwykły, -20 punktów!");
+        }
+        shrinkingCubes.put(id, 1.0);
+        isProcessing = true;
     }
 
-    private void finishScrap(String id) {
+    public void evaporateCube(String id) {
+        spawnedCubeIds.remove(id);
+
         RenderingObject obj = objects.remove(id);
         CubeTextureInfo info = cubeInfoMap.remove(id);
-        shrinkingCubes.remove(id);
 
-        if (obj != null && info != null) {
-            if ("ratrys".equals(info.type)) {
-                score += 50;
-            } else {
-                score += 20;
-            }
-            System.out.println("Dodano punkty, aktualny wynik: " + score);
+        if (obj == null || info == null) {
+            System.out.println("Nie znaleziono kostki o id: " + id);
+            isProcessing = false;
+            return;
         }
+
+        if ("ratrys".equals(info.type)) {
+            score -= 20;
+            System.out.println("Pozostawiono ratrysa, -20 punktów!");
+        } else {
+            score += 20;
+            System.out.println("Pozostawiono zwykły, +20 punktów!");
+        }
+        isProcessing = false;
+    }
+
+    private void spawnBonus() {
+        String bonusPath = bonusTextures[random.nextInt(bonusTextures.length)];
+        Material bonusMat = new Material(Color.WHITE, TextureManager.getTexture(bonusPath));
+        Geometry bonusGeo = new CuboidGeometry(List.of(
+                new CuboidSurface(CuboidFaceType.FRONT, bonusMat)
+        ));
+
+        Vec3 pos = new Vec3(
+                random.nextDouble() * 6 - 3,
+                random.nextDouble() * 3,
+                random.nextDouble() * 6 - 3
+        );
+
+        Transform t = new Transform();
+        t.setPos(pos);
+        t.setSize(new Vec3(2, 2, 0.1)); // powiększone bonusy
+        t.setRot(Quaternion.fromEuler(new Vec3(0, 0, 0)));
+
+        RenderingObject bonusObj = new RenderingObject(bonusGeo, t);
+        String bonusId = "bonus_" + cubeCounter++;
+        objects.put(bonusId, bonusObj);
+        bonusObjects.put(bonusId, 3.0); // 3 sekundy życia
     }
 
     public int getScore() { return score; }
     public String getScoreText() { return "Punkty: " + score; }
+    public boolean isProcessing() { return isProcessing; }
 
     @Override
     public void update(double deltaTime) {
-
         double rotationSpeed = 2 * Math.PI / 10;
         double deltaRotation = rotationSpeed * deltaTime;
 
-        // obracamy tylko te, które nie są zgniatane
         for (String id : spawnedCubeIds) {
             if (!shrinkingCubes.containsKey(id)) {
                 RenderingObject cube = objects.get(id);
@@ -134,9 +187,7 @@ public class PiotrostalObjectBuilder implements Builder {
             }
         }
 
-        // animacja zgniatania
         double shrinkSpeed = 1.5;
-
         List<String> toRemove = new ArrayList<>();
 
         for (Map.Entry<String, Double> entry : shrinkingCubes.entrySet()) {
@@ -148,7 +199,7 @@ public class PiotrostalObjectBuilder implements Builder {
             RenderingObject cube = objects.get(id);
             if (cube != null) {
                 double clampedY = Math.max(ySize, 0);
-                cube.getTransform().setSize(new Vec3(1, clampedY, 1)); // ZGNIATANIE TYLKO W PIONIE
+                cube.getTransform().setSize(new Vec3(1, clampedY, 1));
             }
 
             if (ySize <= 0) {
@@ -159,7 +210,30 @@ public class PiotrostalObjectBuilder implements Builder {
         }
 
         for (String id : toRemove) {
-            finishScrap(id);
+            objects.remove(id);
+            cubeInfoMap.remove(id);
+            shrinkingCubes.remove(id);
+        }
+
+        if (toRemove.size() > 0) {
+            isProcessing = false;
+            spawnCubeInternal();
+        }
+
+        // --- bonusy ---
+        List<String> expiredBonus = new ArrayList<>();
+        for (Map.Entry<String, Double> entry : bonusObjects.entrySet()) {
+            String id = entry.getKey();
+            double timeLeft = entry.getValue() - deltaTime;
+            if (timeLeft <= 0) {
+                expiredBonus.add(id);
+            } else {
+                bonusObjects.put(id, timeLeft);
+            }
+        }
+        for (String id : expiredBonus) {
+            objects.remove(id);
+            bonusObjects.remove(id);
         }
     }
 

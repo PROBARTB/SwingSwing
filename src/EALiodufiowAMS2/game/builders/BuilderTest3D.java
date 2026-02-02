@@ -73,12 +73,12 @@ public class BuilderTest3D implements Builder {
         tf.setRot(Quaternion.fromEuler(new Vec3(0, 0, 0)));
         RenderingObject filler = new RenderingObject(cubeGeoColored, tf);
 
-        Transform tlpos = new Transform(new Vec3(1, 1, 0), Quaternion.fromEuler(new Vec3(Math.toRadians(0), Math.toRadians(0), Math.toRadians(0))));
-        Transform tlts = new Transform(new Vec3(0, 0, 0), Quaternion.fromEuler(new Vec3(Math.toRadians(0), Math.toRadians(0), Math.toRadians(0))));
-        Transform tlte = new Transform(new Vec3(3, 0, 1), Quaternion.fromEuler(new Vec3(Math.toRadians(0), Math.toRadians(0), Math.toRadians(0))));
-        StraightLineGeometry testLineGeo = new StraightLineGeometry(tlts, tlte);
-        Line<StraightLineGeometry> testLine = new Line<StraightLineGeometry>(testLineGeo, filler, tlpos, FillMode.STRETCH, new Color(0xffffffff, true));
-        objects.put("testLine", testLine);
+//        Transform tlpos = new Transform(new Vec3(1, 1, 0), Quaternion.fromEuler(new Vec3(Math.toRadians(0), Math.toRadians(0), Math.toRadians(0))));
+//        Transform tlts = new Transform(new Vec3(0, 0, 0), Quaternion.fromEuler(new Vec3(Math.toRadians(0), Math.toRadians(0), Math.toRadians(0))));
+//        Transform tlte = new Transform(new Vec3(3, 0, 1), Quaternion.fromEuler(new Vec3(Math.toRadians(0), Math.toRadians(0), Math.toRadians(0))));
+//        StraightLineGeometry testLineGeo = new StraightLineGeometry(tlts, tlte);
+//        Line<StraightLineGeometry> testLine = new Line<StraightLineGeometry>(testLineGeo, filler, tlpos, FillMode.STRETCH, new Color(0xffffffff, true));
+//        objects.put("testLine", testLine);
 
     }
 
