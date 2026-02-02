@@ -60,20 +60,34 @@ public class PiotrostalScenePanel extends ScenePanel {
     protected void composeUiOverlay(UiOverlay overlay) {
         UiOverlayLayer layer = overlay.getOrCreateLayer("cwel");
 
-        UiOverlayConstraints scoreConstraints = new UiOverlayConstraints(
-                UiOverlayAnchor.TOP_CENTER, 0, 30, null, null, true
+        // --- Label: "Punkty" ---
+        UiOverlayConstraints titleConstraints = new UiOverlayConstraints(
+                UiOverlayAnchor.TOP_CENTER, 0, 20, null, null, true
         );
 
-        // JLabel z wymuszoną szerokością i HTML
-        scoreLabel = new JLabel("<html>" + piotrostalObjectBuilder.getScoreText() + "</html>");
+        JLabel punktyLabel = new JLabel("Punkty");
+        punktyLabel.setForeground(Color.WHITE);
+        punktyLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        punktyLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        layer.addElement(new UiOverlayElement(punktyLabel, titleConstraints));
+
+        // --- Label: wynik pod spodem ---
+        UiOverlayConstraints scoreConstraints = new UiOverlayConstraints(
+                UiOverlayAnchor.TOP_CENTER, 0, 50, null, null, true
+        );
+
+        scoreLabel = new JLabel(String.valueOf(piotrostalObjectBuilder.getScore()));
         scoreLabel.setForeground(Color.WHITE);
-        scoreLabel.setFont(new Font("Arial", Font.BOLD, 16));
-        scoreLabel.setPreferredSize(new Dimension(200, 30)); // szerokość na tekst
+        scoreLabel.setFont(new Font("Arial", Font.BOLD, 22));
+        scoreLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        scoreLabel.setPreferredSize(new Dimension(200, 30));
 
         layer.addElement(new UiOverlayElement(scoreLabel, scoreConstraints));
 
+        // --- Przycisk ---
         UiOverlayConstraints buttonConstraints = new UiOverlayConstraints(
-                UiOverlayAnchor.TOP_CENTER, 0, 65, null, null, true
+                UiOverlayAnchor.TOP_CENTER, 0, 90, null, null, true
         );
 
         JButton złomowanie = new JButton("Złomuj ratrys!");
@@ -87,10 +101,10 @@ public class PiotrostalScenePanel extends ScenePanel {
 
     private void updateScoreLabel() {
         if (scoreLabel != null) {
-            // HTML wymusza pełne wyświetlenie tekstu
-            scoreLabel.setText("<html>" + piotrostalObjectBuilder.getScoreText() + "</html>");
+            scoreLabel.setText(String.valueOf(piotrostalObjectBuilder.getScore()));
         }
     }
+
 
 
     @Override
